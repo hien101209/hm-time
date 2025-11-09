@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Tạo bài viết{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">📝 Tạo bài viết mới</h1>
+
+  <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-8">
+        <div class="mb-3">
+          <label for="id_tieu_de" class="form-label">Tiêu đề</label>
+          {{ form.tieu_de }}
+        </div>
+        <div class="mb-3">
+          <label for="id_slug" class="form-label">Slug (URL)</label>
+          {{ form.slug }}
+        </div>
+        <div class="mb-3">
+          <label for="id_noi_dung" class="form-label">Nội dung</label>
+          {{ form.noi_dung }}
+        </div>
+        <div class="mb-3">
+          <label for="id_danh_muc" class="form-label">Danh mục</label>
+          {{ form.danh_muc }}
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="mb-3">
+          <label for="id_hinh_anh" class="form-label">Ảnh minh họa</label>
+          {{ form.hinh_anh }}
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">📝 Đăng bài</button>
+          <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-secondary">Hủy</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

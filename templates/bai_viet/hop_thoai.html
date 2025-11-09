@@ -1,0 +1,819 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #chat-box::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  #chat-box::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 152, 0, 0.5);
+    border-radius: 4px;
+  }
+
+  .user-message::after {
+    content: "";
+    position: absolute;
+    right: -8px;
+    top: 12px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent transparent #ff9800;
+  }
+
+  .other-message::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 12px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent #ffe0b2 transparent transparent;
+  }
+
+  .message-text {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+</style>
+<style>
+  .icon-hover:hover {
+    background-color: #fff8e1;
+    transform: scale(1.05);
+    transition: 0.2s;
+  }
+
+  @keyframes fadeInUp {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+
+  /* Emoji grid */
+  #chat-emoji-picker .tab-pane div {
+    line-height: 1.8;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  #chat-emoji-picker .tab-pane div span:hover {
+    background: #fff3e0;
+    border-radius: 6px;
+  }
+
+  /* Scrollbar */
+  #chat-emoji-picker::-webkit-scrollbar {
+    width: 6px;
+  }
+  #chat-emoji-picker::-webkit-scrollbar-thumb {
+    background: #ffe0b2;
+    border-radius: 4px;
+  }
+
+  /* Preview style */
+  #preview-container img {
+    max-height: 70px;
+    border-radius: 10px;
+    border: 1px solid #ffe0b2;
+  }
+  #preview-container .preview-item {
+    position: relative;
+    display: inline-block;
+  }
+  #preview-container .remove-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #scroll-to-bottom {
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  #scroll-to-bottom.show {
+    display: flex !important;
+    opacity: 1;
+    transform: translateY(0);
+    animation: floatUp 0.3s ease;
+  }
+
+  @keyframes floatUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+</style>
+
+<div class="container-fluid mt-3" style="height: calc(100vh - 100px);">
+  <div class="row h-100">
+
+    <!-- Sidebar -->
+    <div class="col-12 col-md-4 border-end d-flex flex-column p-0 h-100" style="overflow-y: auto; background: #fff8f0;">
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white shadow-sm">
+        <h5 class="mb-0 text-warning">💬 Trò chuyện</h5>
+        <button class="btn btn-sm btn-outline-secondary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">☰</button>
+      </div>
+
+      <div id="sidebarMenu" class="collapse d-md-block flex-grow-1 overflow-auto">
+        <!-- Search -->
+        <div class="p-2">
+          <form method="get" class="d-flex">
+            <input type="text" name="q" class="form-control form-control-sm me-2 border-warning" placeholder="🔍 Tìm người..." value="{{ request.GET.q|default_if_none:'' }}">
+            <button type="submit" class="btn btn-sm btn-warning text-white">Tìm</button>
+          </form>
+        </div>
+
+        <div class="accordion" id="chatAccordion">
+          <!-- Bạn bè -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button bg-warning bg-opacity-25 {% if active_tab != 'ban_be' %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFriends">
+                👤 Bạn bè
+              </button>
+            </h2>
+            <div id="collapseFriends" class="accordion-collapse collapse {% if active_tab == 'ban_be' %}show{% endif %}" data-bs-parent="#chatAccordion">
+              <div class="list-group list-group-flush">
+                {% for u in ban_be %}
+                  <a href="{% url 'bai_viet:hop_thoai' u.id %}" 
+                     id="user-{{u.id}}"
+                     class="list-group-item list-group-item-action d-flex justify-content-between align-items-center 
+                            {% if nguoi_nhan and nguoi_nhan.id == u.id %}active bg-warning text-white border-start border-4 border-warning{% else %}text-dark{% endif %}">
+                    <div class="d-flex align-items-center">
+                      <div class="position-relative me-2">
+                        <div class="avatar-initial" data-name="{{ u.username }}">
+                          {{ u.username|slice:":1"|upper }}
+                        </div>
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle badge-unread {% if not u.unread_count %}d-none{% endif %}">
+                          {{ u.unread_count }}
+                        </span>
+                      </div>
+                      <strong>{{ u.username }}</strong>
+                    </div>
+                    <div>
+                      {% if u.is_online %}
+                        <span class="badge bg-success">●</span>
+                      {% else %}
+                        <span class="badge bg-secondary">●</span>
+                      {% endif %}
+                    </div>
+                  </a>
+                {% empty %}
+                  <div class="list-group-item text-muted">Chưa có bạn bè.</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Nhóm -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button bg-warning bg-opacity-25 {% if active_tab != 'nhom' %}collapsed{% endif %}" 
+                      type="button" 
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#collapseGroups">
+                👥 Nhóm
+              </button>
+            </h2>
+            <div id="collapseGroups" 
+                class="accordion-collapse collapse {% if active_tab == 'nhom' %}show{% endif %}" 
+                data-bs-parent="#chatAccordion">
+              <div class="p-2">
+                <a href="{% url 'bai_viet:tao_nhom' %}" 
+                  class="btn btn-sm btn-warning text-white w-100 shadow-sm">➕ Tạo nhóm</a>
+              </div>
+              <div class="list-group list-group-flush">
+                {% for n in request.user.nhom_chats.all %}
+                  <a href="{% url 'bai_viet:chat_nhom' n.id %}" 
+                    id="group-{{n.id}}"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center 
+                            {% if nhom and nhom.id == n.id %}active bg-warning text-white border-start border-4 border-warning{% else %}text-dark{% endif %}">
+                    <div class="d-flex align-items-center">
+                      <div class="position-relative me-2">
+                        {% if n.avatar %}
+                          <img src="{{ n.avatar.url }}" alt="{{ n.ten_nhom }}" 
+                              class="rounded-circle shadow-sm" width="38" height="38">
+                        {% else %}
+                          <div class="avatar-initial" data-name="{{ n.ten_nhom }}"></div>
+                        {% endif %}
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle badge-unread {% if not n.unread_count %}d-none{% endif %}">
+                          {{ n.unread_count }}
+                        </span>
+                      </div>
+                      <strong>{{ n.ten_nhom }}</strong>
+                      {% if n.truong_nhom == request.user %}
+                        <span class="badge bg-warning text-dark ms-2">👑 Bạn là trưởng nhóm</span>
+                      {% elif n.truong_nhom %}
+                        <span class="badge bg-secondary text-white ms-2">👑 {{ n.truong_nhom.username }}</span>
+                      {% endif %}
+                      <span class="badge bg-secondary ms-2">{{ n.thanh_vien.count }}</span>
+                    </div>
+                  </a>
+                {% empty %}
+                  <div class="list-group-item text-muted">Bạn chưa tham gia nhóm nào.</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Kết bạn -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button bg-warning bg-opacity-25 {% if active_tab != 'ket_ban' %}collapsed{% endif %}"
+                      type="button" data-bs-toggle="collapse" data-bs-target="#collapseFriendsRequest">
+                🤝 Kết bạn
+              </button>
+            </h2>
+
+            <div id="collapseFriendsRequest"
+                class="accordion-collapse collapse {% if active_tab == 'ket_ban' %}show{% endif %}"
+                data-bs-parent="#chatAccordion">
+
+              <!-- 📩 Lời mời đến -->
+              <div class="p-2 border-bottom">
+                <h6 class="mb-2 text-warning">📩 Lời mời đến</h6>
+                <div class="list-group list-group-flush">
+                  {% if loi_moi_den %}
+                    {% for lm in loi_moi_den %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark">{{ lm.nguoi_gui.username }}</span>
+                        <div>
+                          <form method="post" action="{% url 'bai_viet:chap_nhan_ket_ban' lm.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">✔️ Đồng ý</button>
+                          </form>
+                          <form method="post" action="{% url 'bai_viet:tu_choi_ket_ban' lm.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">✖️ Từ chối</button>
+                          </form>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="list-group-item text-muted">Không có lời mời nào.</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- 📤 Lời mời đã gửi -->
+              <div class="p-2 border-bottom">
+                <h6 class="mb-2 text-warning">📤 Lời mời đã gửi</h6>
+                <div class="list-group list-group-flush">
+                  {% if loi_moi_di %}
+                    {% for lm in loi_moi_di %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark">{{ lm.nguoi_nhan.username }}</span>
+                        <span class="badge bg-warning text-dark">⏳ Chờ phản hồi</span>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="list-group-item text-muted">Bạn chưa gửi lời mời nào.</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- 🔎 Tìm bạn -->
+              <div class="p-2">
+                <h6 class="mb-2 text-warning">🔎 Tìm bạn mới</h6>
+                <form method="get" action="{% url 'bai_viet:tim_kiem_ket_ban' %}" class="d-flex mb-2">
+                  <input type="text" name="q" class="form-control form-control-sm me-2 border-warning"
+                        placeholder="Nhập tên người dùng..." value="{{ request.GET.q|default_if_none:'' }}">
+                  <button type="submit" class="btn btn-sm btn-warning text-white">Tìm</button>
+                </form>
+
+                <div class="list-group list-group-flush">
+                  {% if chua_ket_ban %}
+                    {% for u in chua_ket_ban %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark">{{ u.username }}</span>
+                        <form method="post" action="{% url 'bai_viet:gui_loi_moi_ket_ban' u.id %}">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-success">➕ Kết bạn</button>
+                        </form>
+                      </div>
+                    {% endfor %}
+                  {% elif request.GET.q %}
+                    <div class="list-group-item text-muted">Không tìm thấy người nào.</div>
+                  {% else %}
+                    <div class="list-group-item text-muted">Nhập tên để tìm bạn mới.</div>
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat box -->
+    <div class="col-12 col-md-8 d-flex flex-column h-100" style="background: #fffdf8;">
+      {% if nguoi_nhan or nhom %}
+        <!-- Header -->
+        <div class="border-bottom p-3 bg-white shadow-sm flex-shrink-0 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            {% if nhom %}
+              <!-- Header nhóm -->
+              <div class="avatar-initial me-2" data-name="{{ nhom.ten_nhom }}"></div>
+              <div>
+                <h6 class="mb-0 text-warning">{{ nhom.ten_nhom }}</h6>
+                <small class="text-muted">👥 {{ nhom.thanh_vien.count }} thành viên</small>
+              </div>
+            {% elif nguoi_nhan %}
+              <!-- Header bạn bè -->
+              <div class="avatar-initial me-2" data-name="{{ nguoi_nhan.username }}">
+                {{ nguoi_nhan.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <h6 class="mb-0 text-warning">{{ nguoi_nhan.username }}</h6>
+                <small class="text-muted">
+                  {% if nguoi_nhan.is_online or nguoi_nhan.username == lm.nguoi_gui.username %}🟢 Online{% else %}⚪ Offline{% endif %}
+                </small>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Menu tuỳ chọn -->
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              ⚙️ Tuỳ chọn
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {% if nhom %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'bai_viet:danh_sach_thanh_vien' nhom.id %}">
+                    👥 Thành viên
+                  </a>
+                </li>
+                <li>
+                  <form action="{% url 'bai_viet:roi_nhom' nhom.id %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger"
+                            onclick="return confirm('Bạn có chắc muốn rời nhóm «{{ nhom.ten }}»?');">
+                      🚪 Rời nhóm
+                    </button>
+                  </form>
+                </li>
+              {% elif nguoi_nhan %}
+                <li>
+                  {% if user.is_authenticated %}
+                    <a class="dropdown-item" href="{% url 'bai_viet:profile' nguoi_nhan.id %}">
+                      👤 Xem thông tin
+                    </a>
+                  {% endif %}
+                </li>
+                <li>
+                  <form action="{% url 'bai_viet:xoa_ban_be' nguoi_nhan.id %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger"
+                            onclick="return confirm('Bạn có chắc muốn xoá bạn «{{ nguoi_nhan.username }}»?');">
+                      ❌ Xoá bạn
+                    </button>
+                  </form>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Chat messages -->
+        <div id="chat-box" class="flex-grow-1 p-4 overflow-auto position-relative"
+            style="scroll-behavior: smooth; background: linear-gradient(180deg, #fffaf2 0%, #fff3e0 100%);">
+
+          {% for tn in tin_nhans %}
+            {% if tn.nguoi_gui == request.user %}
+              <!-- Tin nhắn của người dùng -->
+              <div class="d-flex justify-content-end mb-3">
+                <div class="p-3 rounded-4 shadow-sm position-relative user-message"
+                    style="max-width: 70%; background: #ff9800; color: #fff; animation: fadeIn .3s ease;">
+                  
+                  {% if tn.noi_dung %}
+                    <div class="message-text fw-normal">{{ tn.noi_dung|safe }}</div>
+                  {% endif %}
+                  
+                  {% if tn.image %}
+                    <div class="mt-2">
+                      <img src="{{ tn.image.url }}" alt="Ảnh gửi" 
+                          class="img-fluid rounded-3 border border-light-subtle shadow-sm">
+                    </div>
+                  {% endif %}
+                  
+                  {% if tn.file %}
+                    <div class="mt-2">
+                      <a href="{{ tn.file.url }}" download class="text-light text-decoration-none">
+                        📎 <u>Tải file</u>
+                      </a>
+                    </div>
+                  {% endif %}
+                  
+                  <div class="text-end mt-1">
+                    <small class="opacity-75">{{ tn.thoi_gian|date:"H:i" }}</small>
+                  </div>
+                </div>
+              </div>
+
+            {% else %}
+              <!-- Tin nhắn của người khác -->
+              <div class="d-flex justify-content-start mb-3">
+                <div class="p-3 rounded-4 shadow-sm position-relative other-message"
+                    style="max-width: 70%; background: #ffffff; border:1px solid #ffe0b2; color: #4e342e; animation: fadeIn .3s ease;">
+                  
+                  {% if nhom %}
+                    <div class="fw-semibold mb-1 text-warning-emphasis">
+                      {{ tn.nguoi_gui.username }}
+                    </div>
+                  {% endif %}
+                  
+                  {% if tn.noi_dung %}
+                    <div class="message-text">{{ tn.noi_dung|safe }}</div>
+                  {% endif %}
+                  
+                  {% if tn.image %}
+                    <div class="mt-2">
+                      <img src="{{ tn.image.url }}" alt="Ảnh gửi" 
+                          class="img-fluid rounded-3 border border-warning-subtle shadow-sm">
+                    </div>
+                  {% endif %}
+                  
+                  {% if tn.file %}
+                    <div class="mt-2">
+                      <a href="{{ tn.file.url }}" download class="text-decoration-none text-warning">
+                        📎 <u>{{ tn.file.name|slice:"5:" }}</u>
+                      </a>
+                    </div>
+                  {% endif %}
+
+                  <div class="text-end mt-1">
+                    <small class="text-muted">{{ tn.thoi_gian|date:"H:i" }}</small>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% empty %}
+            <div class="d-flex justify-content-center align-items-center h-100 text-muted fs-5">
+              💭 Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!
+            </div>
+          {% endfor %}
+
+          <!-- 🔽 Nút cuộn xuống -->
+          <button id="scroll-to-bottom" 
+                  class="btn btn-warning position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+                  style="bottom: 80px; right: 25px; display:none; width:45px; height:45px; z-index:1000;">
+            <i class="bi bi-arrow-down-short fs-3 text-white"></i>
+          </button>
+        </div>
+
+        <!-- Input + emoji picker -->
+        <form method="post" enctype="multipart/form-data" id="chat-form"
+              class="p-3 border-top bg-white shadow-sm d-flex align-items-center w-100 position-relative">
+          {% csrf_token %}
+          
+          <!-- Emoji -->
+          <button type="button" id="emoji-button"
+                  class="btn btn-light border rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm icon-hover"
+                  style="width:40px; height:40px;">
+            😊
+          </button>
+
+          <!-- Upload ảnh -->
+          <label class="btn btn-light border rounded-circle p-2 d-flex align-items-center justify-content-center me-2 shadow-sm icon-hover"
+                style="width:40px; height:40px;">
+            <i class="bi bi-image text-primary fs-5"></i>
+            <input type="file" name="image" accept="image/*" hidden id="image-input">
+          </label>
+
+          <!-- Upload file -->
+          <label class="btn btn-light border rounded-circle p-2 d-flex align-items-center justify-content-center me-2 shadow-sm icon-hover"
+                style="width:40px; height:40px;">
+            <i class="bi bi-paperclip text-success fs-5"></i>
+            <input type="file" name="file" hidden id="file-input">
+          </label>
+          
+          <!-- Text -->
+          <input id="chat-input" type="text" name="noi_dung"
+                class="form-control rounded-pill me-2 shadow-sm border-warning-subtle px-3 py-2"
+                placeholder="Nhập tin nhắn...">
+
+          <!-- Gửi -->
+          <button type="submit"
+                  class="btn btn-warning text-white rounded-pill px-4 shadow-sm d-flex align-items-center justify-content-center"
+                  style="height:40px;">
+            <i class="bi bi-send-fill me-1"></i> Gửi
+          </button>
+        </form>
+
+        <!-- Preview ảnh & file -->
+        <div id="preview-container" class="px-3 pb-2 d-none">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div id="image-preview" class="position-relative"></div>
+            <div id="file-preview" class="position-relative"></div>
+          </div>
+        </div>
+
+        <!-- Emoji picker -->
+        <div id="chat-emoji-picker" class="emoji-slide position-absolute bg-white border rounded p-2 shadow-sm"
+            style="bottom: 70px; left: 60px; display:none; z-index:1000; width:280px; animation: fadeInUp 0.3s ease;">
+          <!-- Tabs -->
+          <ul class="nav nav-tabs mb-2" id="chat-emojiTab" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#face">😀</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#animal">🐶</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#food">🍔</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#heart">❤️</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#other">⭐</button></li>
+          </ul>
+
+          <!-- Tab content -->
+          <div class="tab-content" style="max-height:200px; overflow-y:auto;">
+            <div class="tab-pane fade show active" id="face"><div class="d-flex flex-wrap">😃 😄 😁 😆 😂 🤣 😊 😇 😉 😍 🥰 😘 😜 🤪 🤓 😎 🥳</div></div>
+            <div class="tab-pane fade" id="animal"><div class="d-flex flex-wrap">🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐯 🐷 🐸 🐵 🐔 🐧 🦆 🦉</div></div>
+            <div class="tab-pane fade" id="food"><div class="d-flex flex-wrap">🍏 🍎 🍌 🍉 🍇 🍓 🍍 🥥 🥑 🥦 🥬 🥕 🍔 🍟 🍕 🍜 🍣</div></div>
+            <div class="tab-pane fade" id="heart"><div class="d-flex flex-wrap">❤️ 💛 💚 💙 💜 🖤 🤍 💔 💕 💞 💖 💘 💝 💟</div></div>
+            <div class="tab-pane fade" id="other"><div class="d-flex flex-wrap">⭐ 🌟 ✨ ⚡ 💫 🌈 ☀️ 🌙 ☁️ ❄️ ☔ 🔥 💧 🌊</div></div>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="d-flex justify-content-center align-items-center h-100 text-muted">
+          Chọn một bạn hoặc nhóm để bắt đầu trò chuyện 💬
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Emoji toggle
+  const emojiBtn = document.getElementById('emoji-button');
+  const emojiPicker = document.getElementById('chat-emoji-picker');
+  const chatInput = document.getElementById('chat-input');
+
+  emojiBtn.addEventListener('click', () => {
+    emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'block' : 'none';
+  });
+
+  emojiPicker.addEventListener('click', e => {
+    if (e.target.nodeType === Node.TEXT_NODE || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN') {
+      chatInput.value += e.target.textContent.trim();
+      chatInput.focus();
+    }
+  });
+</script>
+<!-- Script Avatar riêng cho nhóm -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const avatars = document.querySelectorAll(".avatar-initial");
+
+  // Sinh màu từ tên bằng HSL
+  function stringToHSL(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;  // Hue
+    const s = 60 + (Math.abs(hash) % 20); // Saturation: 60–80%
+    const l = 45 + (Math.abs(hash) % 10); // Lightness: 45–55%
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
+  // Tính độ sáng để chọn màu chữ
+  function getLuminance(color) {
+    const rgb = color.match(/\d+/g).map(Number);
+    const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+    return 0.299*r + 0.587*g + 0.114*b;
+  }
+
+  avatars.forEach(el => {
+    const name = el.getAttribute("data-name") || "?";
+    const parts = name.trim().split(" ");
+    let initials = parts[0][0] || "";
+    if (parts.length > 1) {
+      initials += parts[1][0];  // Lấy thêm ký tự đầu từ từ thứ 2
+    }
+    initials = initials.toUpperCase();
+
+    // Sinh màu gradient từ tên
+    const baseColor = stringToHSL(name);
+    const secondColor = stringToHSL(name + "x"); 
+    const bg = `linear-gradient(135deg, ${baseColor}, ${secondColor})`;
+
+    // Gán vào avatar
+    el.textContent = initials;
+    el.style.background = bg;
+    el.style.color = "white";
+    el.style.fontWeight = "bold";
+    el.style.display = "flex";
+    el.style.justifyContent = "center";
+    el.style.alignItems = "center";
+    el.style.width = "38px";
+    el.style.height = "38px";
+    el.style.borderRadius = "50%";
+    el.style.textTransform = "uppercase";
+    el.style.fontSize = "14px";
+    el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+    el.style.flexShrink = "0";
+  });
+});
+</script>
+<script>
+(function(){
+  const userId = {{ request.user.id }};
+  const otherId = {{ nguoi_nhan.id|default:'null' }};
+  if (otherId) {
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${proto}://${window.location.host}/ws/chat/personal/${otherId}/`);
+
+    socket.onopen = () => {
+      console.log("WS connected");
+      // gửi mark-read (hoặc handled by view already)
+    };
+
+    socket.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.action === "new_message") {
+        // append to DOM (bạn có HTML render sẵn tin nhans server-side; append JS khi recv mới)
+        // update badge, scroll...
+        console.log("new message", data.message);
+        // ví dụ simple: reload phần messages? hoặc append
+        location.reload(); // <--- tạm: đơn giản, hoặc custom appendMessageToDOM(data.message)
+      } else if (data.action === "typing") {
+        // show typing indicator
+      }
+    };
+
+    socket.onclose = () => console.log("WS closed");
+
+    // send on form submit
+    const form = document.querySelector("form[method='post']");
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const input = document.getElementById("chat-input");
+      const content = input.value.trim();
+      if (!content) return;
+      socket.send(JSON.stringify({action:"send", content: content}));
+      input.value = "";
+    });
+
+    // typing
+    let typingTimer = null;
+    document.getElementById("chat-input").addEventListener("input", () => {
+      socket.send(JSON.stringify({action:"typing"}));
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(()=>{/*stop typing*/}, 1500);
+    });
+  }
+})();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const imageInput = document.querySelector('input[name="image"]');
+  const fileInput = document.querySelector('input[name="file"]');
+  const form = document.querySelector('form[method="post"]');
+
+  function autoSend(input) {
+    if (!input) return; // kiểm tra tồn tại
+
+    input.addEventListener("change", function () {
+      if (input.files.length > 0) {
+        const formData = new FormData(form);
+        formData.append(input.name, input.files[0]);
+
+        // Nếu nội dung trống thì bỏ để tránh lỗi validation
+        if (!formData.get("noi_dung")) {
+          formData.set("noi_dung", "");
+        }
+
+        fetch(window.location.href, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => {
+            if (res.ok) {
+              console.log("Đã gửi " + input.name + " thành công!");
+              location.reload(); // reload lại để hiển thị tin nhắn
+            } else {
+              console.error("Lỗi khi gửi " + input.name);
+            }
+          })
+          .catch((err) => console.error(err));
+      }
+    });
+  }
+
+  autoSend(imageInput);
+  autoSend(fileInput);
+});
+</script>
+<script>
+  const emojiBtn = document.getElementById('emoji-button');
+  const emojiBox = document.getElementById('chat-emoji-picker');
+  const chatInput = document.getElementById('chat-input');
+  const imageInput = document.getElementById('image-input');
+  const fileInput = document.getElementById('file-input');
+  const previewContainer = document.getElementById('preview-container');
+  const imgPreview = document.getElementById('image-preview');
+  const filePreview = document.getElementById('file-preview');
+
+  // Emoji toggle
+  emojiBtn.addEventListener('click', () => {
+    emojiBox.style.display = emojiBox.style.display === 'block' ? 'none' : 'block';
+  });
+
+  // Insert emoji
+  emojiBox.addEventListener('click', e => {
+    if (e.target.textContent.trim()) {
+      chatInput.value += e.target.textContent.trim();
+    }
+  });
+
+  // Hide emoji when click outside
+  document.addEventListener('click', e => {
+    if (!emojiBtn.contains(e.target) && !emojiBox.contains(e.target)) emojiBox.style.display = 'none';
+  });
+
+  // Preview image
+  imageInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    previewContainer.classList.remove('d-none');
+    imgPreview.innerHTML = `
+      <div class="preview-item me-2">
+        <img src="${url}" alt="preview">
+        <button type="button" class="remove-btn" onclick="removePreview('image')">×</button>
+      </div>`;
+  });
+
+  // Preview file
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    previewContainer.classList.remove('d-none');
+    filePreview.innerHTML = `
+      <div class="preview-item">
+        <span class="badge bg-light text-dark border px-3 py-2 shadow-sm">
+          📎 ${file.name}
+        </span>
+        <button type="button" class="remove-btn" onclick="removePreview('file')">×</button>
+      </div>`;
+  });
+
+  // Remove preview
+  function removePreview(type) {
+    if (type === 'image') {
+      imgPreview.innerHTML = '';
+      imageInput.value = '';
+    } else {
+      filePreview.innerHTML = '';
+      fileInput.value = '';
+    }
+    if (!imageInput.value && !fileInput.value)
+      previewContainer.classList.add('d-none');
+  }
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const chatBox = document.getElementById("chat-box");
+  const scrollBtn = document.getElementById("scroll-to-bottom");
+
+  // Lần đầu vào -> cuộn xuống cuối
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Theo dõi cuộn
+  chatBox.addEventListener("scroll", () => {
+    const distance = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight;
+    if (distance > 400) {
+      scrollBtn.classList.add("show");
+    } else {
+      scrollBtn.classList.remove("show");
+    }
+  });
+
+  // Khi nhấn nút -> cuộn xuống cuối
+  scrollBtn.addEventListener("click", () => {
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+  });
+
+  // Theo dõi tin nhắn mới -> nếu đang ở gần cuối thì tự cuộn
+  const observer = new MutationObserver(() => {
+    const distance = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight;
+    if (distance < 150) {
+      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+    }
+  });
+  observer.observe(chatBox, { childList: true, subtree: true });
+});
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Danh sách nhóm</h2>
+
+    {% if nhoms %}
+        <ul class="list-group">
+            {% for nhom in nhoms %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'chi_tiet_nhom' nhom.id %}">
+                        {{ nhom.ten_nhom }}
+                    </a>
+                    <span class="badge bg-primary rounded-pill">
+                        {{ nhom.thanh_vien.count }} thành viên
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Bạn chưa tham gia nhóm nào.</p>
+    {% endif %}
+
+    <a href="{% url 'bai_viet:tao_nhom' %}" class="btn btn-success mt-3">+ Tạo nhóm mới</a>
+</div>
+{% endblock %}

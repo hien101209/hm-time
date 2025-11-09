@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Bài viết{% endblock %}
+
+{% block content %}
+<style>
+  .post-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .post-card:hover {
+    transform: translateY(-5px);
+  }
+  .post-image-wrapper {
+    position: relative;
+  }
+  .post-image-wrapper img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+  }
+  .post-title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+  }
+  .badge-featured {
+    background-color: gold;
+    color: black;
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .post-card-body {
+    padding: 1rem;
+    flex-grow: 1;
+  }
+  .post-card-date {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+  .post-card-actions a {
+    margin-right: 0.5rem;
+  }
+</style>
+
+<h1 class="mb-4">📃 Danh sách bài viết</h1>
+
+<div class="d-flex justify-content-end mb-3">
+  <a class="btn btn-success" href="{% url 'bai_viet:tao_bai_viet' %}">
+    <i class="bx bx-plus"></i> Tạo bài viết mới
+  </a>
+</div>
+
+{% if danh_sach %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for bai in danh_sach %}
+      <div class="col">
+        <div class="card post-card h-100 border-0">
+          <div class="post-image-wrapper">
+            {% if bai.hinh_anh %}
+              <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}">
+            {% else %}
+              <img src="https://via.placeholder.com/600x180?text=No+Image" alt="No image">
+            {% endif %}
+            <div class="post-title-overlay">
+              {{ bai.tieu_de }}
+              {% if bai.noi_bat %}
+                <span class="badge-featured float-end">🌟 Nổi bật</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="post-card-body">
+            <div class="post-card-date">
+              <i class="bx bx-calendar"></i> {{ bai.ngay_dang|date:"d/m/Y H:i" }}
+            </div>
+            {% if bai.mo_ta %}
+              <p style="font-size: 0.95rem; color: #555;">
+                {{ bai.mo_ta|truncatechars:100 }}
+              </p>
+            {% endif %}
+            <div class="post-card-actions mt-auto">
+              <a class="btn btn-sm btn-info" href="{% url 'bai_viet:chi_tiet_bai_viet' pk=bai.pk %}">
+                <i class="bx bx-show"></i> Xem
+              </a>
+              <a class="btn btn-sm btn-warning" href="{% url 'bai_viet:sua_bai_viet' pk=bai.pk %}">
+                <i class="bx bx-edit"></i> Sửa
+              </a>
+              <a class="btn btn-sm btn-danger"
+                 href="{% url 'bai_viet:xoa_bai_viet' pk=bai.pk %}"
+                 onclick="return confirm('Bạn có chắc muốn xóa bài viết này?');">
+                <i class="bx bx-trash"></i> Xóa
+              </a>
+
+              {% if request.user.is_superuser or request.user.groups.first.name == 'Admin' %}
+                {% if not bai.noi_bat %}
+                  <a href="{% url 'bai_viet:duyet_noi_bat' bai.id %}" class="btn btn-sm btn-outline-success">
+                    ✅ Duyệt nổi bật
+                  </a>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if danh_sach.has_other_pages %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if danh_sach.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ danh_sach.previous_page_number }}">&laquo;</a>
+          </li>
+        {% endif %}
+        {% for i in danh_sach.paginator.page_range %}
+          <li class="page-item {% if i == danh_sach.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+          </li>
+        {% endfor %}
+        {% if danh_sach.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ danh_sach.next_page_number }}">&raquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% else %}
+  <div class="alert alert-info mt-3">Không có bài viết nào.</div>
+{% endif %}
+
+{% endblock %}

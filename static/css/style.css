@@ -1,0 +1,48 @@
+li :hover{
+    background-color: rgb(193, 192, 201);
+    color: white;
+}
+.nav-item{
+    border-radius: 0%;
+}
+.nav-pills .nav-link{
+    border-radius: 0%;
+}
+nav{
+    float: left;
+}
+.ul1 {
+    float: left;
+}
+.ul2{
+    float: right;
+}
+.menu{
+    background-color: antiquewhite;
+    height: 56px;
+}
+li{
+    color: aliceblue;
+}
+.hm{
+    
+}
+#icon {
+    background-color: rgb(255, 179, 0) !important;
+}
+#cn{
+    background-color: antiquewhite !important;
+}
+a{
+    text-decoration: none !important;
+}
+*{
+    color: black !important;
+}
+#viet{
+    padding: 3%;
+    text-align: center;
+}
+#pt:hover{
+    transform: scale(1.2);
+}

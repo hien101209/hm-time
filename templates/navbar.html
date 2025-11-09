@@ -1,0 +1,150 @@
+<style>
+    /* 1. Hover menu item rõ ràng hơn */
+    li.nav-item:hover {
+        background-color: rgb(193, 192, 201);
+        transition: all 0.3s ease;
+    }
+
+    li.nav-item:hover > a.nav-link {
+        color: white !important;
+    }
+
+    /* 2. Hiệu ứng mềm mại cho link */
+    .nav-link {
+        transition: color 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* 3. Bóng đổ dropdown */
+    .dropdown-menu {
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 4. Nút tìm kiếm và thoát đẹp hơn */
+    .btn {
+        border-radius: 6px;
+    }
+
+    /* Bỏ bo góc cho menu */
+    .nav-item, .nav-pills .nav-link {
+        border-radius: 0%;
+    }
+
+    /* Thanh menu chính */
+    .menu {
+        background-color: antiquewhite;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+    }
+
+    /* Tiêu đề logo */
+    #icon {
+        background-color: rgb(255, 179, 0) !important;
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: black !important;
+        font-weight: bold;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Loại bỏ gạch chân + màu chữ link */
+    a {
+        text-decoration: none !important;
+        color: black !important;
+    }
+
+    /* Hiệu ứng phóng to khi hover */
+    #pt:hover {
+        transform: scale(1.2);
+        transition: transform 0.3s ease;
+    }
+
+    .dropdown-menu a:hover {
+        background-color: #ccc;
+    }
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .btn-outline-success:hover {
+        background-color: #198754;
+        color: white;
+    }
+
+</style>
+
+<div class="menu">
+    <!-- Bên trái: logo + menu -->
+    <div class="d-flex align-items-center">
+        <!-- Tiêu đề -->
+        <div id="icon" class="me-4">
+            <i class="bx bxs-meteor me-2"></i> Hm time
+        </div>
+
+        <!-- Menu trái -->
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'bai_viet:home' %}">Trang chủ</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'bai_viet:danh_sach_bai_viet' %}">Bài viết</a>
+            </li>
+            {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'bai_viet:profile' user.id %}">Tài khoản</a>
+                </li>
+            {% endif %}
+            {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'bai_viet:hop_thoai' user.id %}">
+                        💬 Hộp thoại
+                    </a>
+                </li>
+            {% endif %}
+            {% if user.is_authenticated and is_admin %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'bai_viet:danh_sach_to_cao' %}">
+                📋 Quản lý tố cáo
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+    </div>
+
+    <!-- Bên phải: tìm kiếm + đăng nhập/đăng xuất -->
+    <div class="d-flex align-items-center">
+        <!-- Form tìm kiếm -->
+        <form class="d-flex me-3" role="search" method="get" action="{% url 'bai_viet:tim_kiem' %}">
+            <input class="form-control me-2" type="search" name="q" placeholder="Tìm kiếm" aria-label="Search">
+            <button class="btn btn-outline-success py-2" type="submit">Tìm</button>
+        </form>
+
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger py-2 d-flex align-items-center" style="gap: 6px;">
+                    <i class="bx bx-log-out"></i> Đăng xuất
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-primary py-2 me-2 d-flex align-items-center" style="gap: 6px;">
+                <i class="bx bx-log-in"></i> Đăng nhập
+            </a>
+            <a href="{% url 'signup' %}" class="btn btn-outline-success py-2 d-flex align-items-center" style="gap: 6px;">
+                <i class="bx bx-user-plus"></i> Đăng ký
+            </a>
+        {% endif %}
+    </div>
+
+</div>

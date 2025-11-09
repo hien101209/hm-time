@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}About Me{% endblock %}
+
+{% block content %}
+<style>
+  .contact-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    padding: 2rem;
+    transition: transform 0.2s;
+  }
+  .contact-card:hover {
+    transform: translateY(-5px);
+  }
+  .contact-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+    color: #007bff;
+  }
+  .social-links a {
+    display: inline-block;
+    margin-right: 0.75rem;
+    font-size: 1.5rem;
+    color: #555;
+    transition: color 0.3s;
+  }
+  .social-links a:hover {
+    color: #007bff;
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="contact-card">
+    <div class="row g-4 align-items-center">
+      <div class="col-md-4 text-center">
+        <img src="{{ about_me.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle shadow" style="max-width: 200px;">
+      </div>
+      <div class="col-md-8">
+        <h2 class="text-primary mb-3">{{ about_me.name }}</h2>
+        <p class="lead">{{ about_me.short_description }}</p>
+        <ul class="list-group list-group-flush mb-3">
+          <li class="list-group-item">
+            <i class="bx bx-envelope contact-icon"></i>
+            <strong>Email:</strong> <a href="mailto:{{ about_me.email }}">{{ about_me.email }}</a>
+          </li>
+          <li class="list-group-item">
+            <i class="bx bx-globe contact-icon"></i>
+            <strong>Website:</strong> <a href="{{ about_me.website }}" target="_blank">{{ about_me.website }}</a>
+          </li>
+          <li class="list-group-item">
+            <i class="bx bxl-github contact-icon"></i>
+            <strong>GitHub:</strong> <a href="{{ about_me.github }}" target="_blank">{{ about_me.github }}</a>
+          </li>
+          <li class="list-group-item">
+            <i class="bx bxl-linkedin-square contact-icon"></i>
+            <strong>LinkedIn:</strong> <a href="{{ about_me.linkedin }}" target="_blank">{{ about_me.linkedin }}</a>
+          </li>
+          <li class="list-group-item">
+            <i class="bx bxs-phone contact-icon"></i>
+            <strong>Phone:</strong> <a href="tel:{{ about_me.phone }}">{{ about_me.phone }}</a>
+          </li>
+          <li class="list-group-item">
+            <i class="bx bxl-whatsapp contact-icon"></i>
+            <strong>WhatsApp:</strong> <a href="https://wa.me/{{ about_me.phone|slice:'1:' }}" target="_blank">Chat now</a>
+          </li>
+        </ul>
+        <div class="social-links">
+          <a href="{{ about_me.facebook }}" target="_blank"><i class='bx bxl-facebook-circle'></i></a>
+          <a href="{{ about_me.twitter }}" target="_blank"><i class='bx bxl-twitter'></i></a>
+          <a href="{{ about_me.instagram }}" target="_blank"><i class='bx bxl-instagram-alt'></i></a>
+          <a href="{{ about_me.youtube }}" target="_blank"><i class='bx bxl-youtube'></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tìm kiếm bạn bè{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background: linear-gradient(135deg, #fff7e6, #ffe0b2);
+    min-height: 100vh;
+  }
+
+  .search-card {
+    max-width: 700px;
+    margin: 50px auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    padding: 2rem;
+    backdrop-filter: blur(6px);
+  }
+
+  .search-card h4 {
+    color: #e67e22;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .list-group-item {
+    border: none;
+    background: #fffaf2;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: 0.25s ease;
+  }
+
+  .list-group-item:hover {
+    background: #fff3e0;
+    transform: translateY(-2px);
+  }
+
+  .btn-friend {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    transition: 0.25s ease;
+  }
+
+  .btn-friend:hover {
+    transform: scale(1.05);
+  }
+
+  .btn-back {
+    margin-top: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .user-status {
+    font-size: 0.9rem;
+    color: #999;
+  }
+</style>
+
+<div class="search-card">
+  <h4>🔎 Kết quả tìm kiếm cho: <span class="text-dark">"{{ query }}"</span></h4>
+
+  {% if ket_qua %}
+    <ul class="list-group mt-3">
+      {% for u in ket_qua %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-bold text-dark">{{ u.username }}</span><br>
+            {% if u.profile.bio %}
+              <small class="user-status">{{ u.profile.bio }}</small>
+            {% endif %}
+          </div>
+
+          {% if u in friends %}
+            <span class="badge bg-success">✅ Đã là bạn</span>
+          {% elif u in da_gui_loi_moi %}
+            <span class="badge bg-warning text-dark">⏳ Đã gửi lời mời</span>
+          {% else %}
+            <form method="post" action="{% url 'bai_viet:gui_loi_moi_ket_ban' u.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-sm btn-friend">
+                ➕ Kết bạn
+              </button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted mt-3">Không tìm thấy người dùng nào.</p>
+  {% endif %}
+
+  <div class="text-center">
+    <a href="{% url 'bai_viet:hop_thoai' %}" class="btn btn-outline-secondary btn-sm btn-back">
+      ⬅ Quay lại
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<style>
+/* ===================== Reset ===================== */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: url('/static/images/bg-blog.jpg') no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* Overlay sáng tối */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(6px);
+  z-index: -1;
+}
+
+/* ===================== Dark mode ===================== */
+body.dark-mode::before,
+@media (prefers-color-scheme: dark) {
+  body::before { background: rgba(0,0,0,0.85); }
+  .container-glass { background: rgba(25,25,25,0.9); color: #eee; }
+  .page-header h1 {
+    -webkit-text-fill-color: white;
+    text-shadow: 0 0 15px #ffb300;
+  }
+  .post-card { background: #1e1e1e; border-color: #333; }
+}
+
+/* ===================== Container ===================== */
+.container-glass {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+/* ===================== Tiêu đề trang ===================== */
+.page-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.page-header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #f9a825, #fdd835);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glow 3s infinite ease-in-out;
+}
+@keyframes glow {
+  0% { text-shadow: 0 0 5px #ffeb3b; }
+  50% { text-shadow: 0 0 15px #ffc107; }
+  100% { text-shadow: 0 0 5px #ffeb3b; }
+}
+
+/* ===================== Scroll nổi bật ===================== */
+.highlight-scroll-wrapper {
+  margin-bottom: 2rem;
+  position: relative;
+}
+.highlight-scroll-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-left: .5rem;
+  border-left: 4px solid #ffca28;
+}
+.highlight-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: .5rem;
+  scrollbar-width: none;
+}
+.highlight-scroll::-webkit-scrollbar { display: none; }
+
+/* ===================== Card chung ===================== */
+.card-base {
+  border-radius: .75rem;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.card-base:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+}
+.card-base img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .4s ease;
+}
+.card-base:hover img { transform: scale(1.05); }
+
+/* ===================== Card nổi bật ===================== */
+.highlight-card-horizontal {
+  composes: card-base;
+  flex: 0 0 320px;
+  border-radius: 1rem;   /* Bo góc card nổi bật */
+  overflow: hidden;
+}
+.highlight-img-wrapper {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+.highlight-card-horizontal img {
+  border-radius: inherit; /* Ảnh bo theo card */
+}
+.highlight-card-horizontal .info { padding: 1rem; }
+.highlight-card-horizontal .info h5 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: .3rem;
+}
+
+/* ===================== Bài viết thường ===================== */
+.post-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  border: 1px solid #eee;
+}
+.post-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  border-color: #f1c40f;
+}
+.post-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-bottom: 4px solid #ffd700;
+}
+.post-card-body {
+  padding: 1rem;
+}
+.post-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.post-card-date {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+/* ===================== Badge tùy chỉnh ===================== */
+.badge-custom {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.badge-new {
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  color: white;
+}
+.badge-hot {
+  background: linear-gradient(to right, #f7971e, #ffd200);
+  color: black;
+}
+
+/* ===================== Pagination ===================== */
+.pagination .page-link {
+  border: none;
+  color: #444;
+  font-weight: 600;
+}
+.pagination .page-link:hover { background: #ffecb3; }
+.page-item.active .page-link { background: #ffca28; color: #000; }
+.page-item.disabled .page-link { color: #bbb; }
+
+/* ===================== Nút ===================== */
+.toggle-theme {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #ffca28;
+  border: none;
+  padding: .5rem .8rem;
+  border-radius: .5rem;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: background .2s ease;
+}
+.toggle-theme:hover { background: #ffc107; }
+
+.scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 193, 7, 0.9);
+  border: none;
+  padding: .6rem .8rem;
+  font-size: 1.4rem;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: all .2s ease;
+  z-index: 2;
+}
+.scroll-btn:hover { background: #ffa000; color: #fff; }
+.scroll-btn.left { left: -15px; }
+.scroll-btn.right { right: -15px; }
+/* ===================== Nút scroll nổi bật ===================== */
+.scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 193, 7, 0.7);  /* Vàng nhạt trong suốt */
+  border: 2px solid rgba(255, 193, 7, 0.9);
+  backdrop-filter: blur(4px);
+  
+  font-size: 1.4rem;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: all .25s ease;
+  z-index: 2;
+}
+.scroll-btn:hover {
+  background: #ffc107;
+  color: #fff;
+  transform: translateY(-50%) scale(1.15); /* hover phóng to nhẹ */
+  box-shadow: 0 6px 16px rgba(255,193,7,0.6);
+}
+.scroll-btn.left { left: -18px; }
+.scroll-btn.right { right: -18px; }
+/* Khi kéo thì ẩn chọn text, mượt hơn */
+#highlight-scroll.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+</style>
+
+
+<!-- ===================== Nội dung ===================== -->
+<div class="container container-glass">
+
+  <div class="page-header">
+    <h1>📚 Trang chủ</h1>
+    <p>Chào mừng bạn đến với trang quản lý bài viết.</p>
+  </div>
+
+  {% if bai_viet_noi_bat %}
+  <div class="highlight-scroll-wrapper">
+    <div class="highlight-scroll-title">🌟 Bài viết nổi bật</div>
+
+    <!-- Nút điều hướng -->
+    <button class="scroll-btn left" onclick="scrollHighlight(-1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="scroll-btn right" onclick="scrollHighlight(1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <div class="highlight-scroll" id="highlight-scroll">
+      {% for bai in bai_viet_noi_bat %}
+      <a href="{% url 'bai_viet:chi_tiet_bai_viet' bai.id %}">
+        <div class="highlight-card-horizontal">
+          <div class="highlight-img-wrapper">
+            {% if bai.hinh_anh %}
+              <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}">
+            {% else %}
+              <img src="https://via.placeholder.com/320x180?text=No+Image" alt="No image">
+            {% endif %}
+          </div>
+          <div class="info">
+            <h5>{{ bai.tieu_de }}</h5>
+            <small class="text-muted">✍️ {{ bai.tac_gia }} • 📅 {{ bai.ngay_dang|date:"d/m/Y" }}</small>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <h3 class="mb-3">🆕 Bài viết mới nhất</h3>
+  {% if bai_viets %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      {% for bai in bai_viets %}
+        <div class="col">
+          <a href="{% url 'bai_viet:chi_tiet_bai_viet' bai.id %}">
+            <div class="post-card h-100">
+              <div class="highlight-img-wrapper" style="height: 220px;">
+                {% if bai.hinh_anh %}
+                  <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}">
+                {% else %}
+                  <img src="https://via.placeholder.com/600x220?text=No+Image" alt="No image">
+                {% endif %}
+              </div>
+              <div class="post-card-body">
+                <div class="post-card-title">
+                  {{ bai.tieu_de }}
+                  {% if bai.ngay_dang|date:"Ymd" == today|date:"Ymd" %}
+                    <span class="badge-custom badge-new">🆕 Mới đăng</span>
+                  {% endif %}
+                  {% if bai.noi_bat %}
+                    <span class="badge-custom badge-hot">🔥 Nổi bật</span>
+                  {% endif %}
+                </div>
+                <div class="post-card-date">
+                  <i class="bx bx-calendar"></i> {{ bai.ngay_dang|date:"d/m/Y" }}
+                </div>
+                <p>{{ bai.tom_tat|truncatewords:20 }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>Chưa có bài viết nào.</p>
+  {% endif %}
+
+
+  <!-- Pagination -->
+  {% if bai_viets.has_other_pages %}
+  <div class="pagination-wrapper d-flex justify-content-center mt-4">
+    <ul class="pagination">
+      {% if bai_viets.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ bai_viets.previous_page_number }}">&laquo;</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+      {% endif %}
+      {% for num in bai_viets.paginator.page_range %}
+        {% if num == bai_viets.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num >= bai_viets.number|add:'-2' and num <= bai_viets.number|add:'2' %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% elif num == 1 or num == bai_viets.paginator.num_pages %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% elif num == bai_viets.number|add:'-3' or num == bai_viets.number|add:'3' %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      {% if bai_viets.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ bai_viets.next_page_number }}">&raquo;</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("highlight-scroll");
+  const leftBtn = document.querySelector(".scroll-btn.left");
+  const rightBtn = document.querySelector(".scroll-btn.right");
+  const scrollAmount = 340; // chiều rộng ~1 card
+
+  // ===== Scroll mượt khi click nút =====
+  function smoothScroll(direction) {
+    container.scrollBy({ left: direction * scrollAmount, behavior: "smooth" });
+  }
+  leftBtn.addEventListener("click", () => smoothScroll(-1));
+  rightBtn.addEventListener("click", () => smoothScroll(1));
+
+  // ===== Giữ nút = auto scroll =====
+  let scrollInterval;
+  function startAutoScroll(direction) {
+    smoothScroll(direction);
+    scrollInterval = setInterval(() => smoothScroll(direction), 500);
+  }
+  function stopAutoScroll() { clearInterval(scrollInterval); }
+  [leftBtn, rightBtn].forEach((btn, i) => {
+    const dir = i === 0 ? -1 : 1;
+    btn.addEventListener("mousedown", () => startAutoScroll(dir));
+    btn.addEventListener("mouseup", stopAutoScroll);
+    btn.addEventListener("mouseleave", stopAutoScroll);
+  });
+
+  // ===== Điều khiển bằng phím mũi tên =====
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") smoothScroll(-1);
+    if (e.key === "ArrowRight") smoothScroll(1);
+  });
+
+  // ===== Kéo chuột (drag) =====
+  let isDown = false;
+  let startX, scrollLeft;
+  container.addEventListener("mousedown", (e) => {
+    isDown = true;
+    container.classList.add("dragging");
+    startX = e.pageX - container.offsetLeft;
+    scrollLeft = container.scrollLeft;
+  });
+  container.addEventListener("mouseleave", () => { isDown = false; });
+  container.addEventListener("mouseup", () => { isDown = false; });
+  container.addEventListener("mousemove", (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX) * 1.5; // tốc độ kéo
+    container.scrollLeft = scrollLeft - walk;
+  });
+
+  // ===== Vuốt cảm ứng (touch swipe) =====
+  let touchStartX = 0;
+  container.addEventListener("touchstart", (e) => {
+    touchStartX = e.touches[0].clientX;
+  });
+  container.addEventListener("touchmove", (e) => {
+    const touchX = e.touches[0].clientX;
+    const walk = (touchStartX - touchX) * 1.5;
+    container.scrollLeft += walk;
+    touchStartX = touchX;
+  });
+
+  // ===== Loop khi hết (tùy chọn) =====
+  container.addEventListener("scroll", () => {
+    if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
+      setTimeout(() => container.scrollTo({ left: 0, behavior: "smooth" }), 800);
+    }
+  });
+});
+</script>
+
+
+{% endblock %}

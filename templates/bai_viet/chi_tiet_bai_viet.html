@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ bai_viet.tieu_de }}{% endblock %}
+
+{% block content %}
+<style>
+    .rich-content p {
+        margin-bottom: 1.2rem;
+        line-height: 1.9;
+        font-size: 1.1rem;
+        text-align: justify;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg rounded-4 border-0 overflow-hidden">
+                {% if bai_viet.hinh_anh %}
+                    <img src="{{ bai_viet.hinh_anh.url }}" class="img-fluid w-100 rounded-top-4 shadow-sm" style="max-height: 420px; object-fit: cover;" alt="{{ bai_viet.tieu_de|default:'Ảnh bài viết' }}">
+                {% endif %}
+                
+                <div class="p-4 p-md-5">
+                    <h1 class="fw-bold mb-3" style="font-size: 2.25rem; background: linear-gradient(to right, #ff6a00, #ee0979); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+                        {{ bai_viet.tieu_de }}
+                    </h1>
+
+                    <div class="text-muted mb-4 d-flex flex-wrap gap-4" style="font-size: 0.95rem;">
+                        <div><i class="bi bi-person-fill me-1"></i> <strong>Tác giả:</strong> {{ bai_viet.tac_gia }}</div>
+                        <div><i class="bi bi-calendar-event me-1"></i> <strong>Ngày đăng:</strong> {{ bai_viet.ngay_dang|date:"d/m/Y H:i" }}</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="rich-content fs-5 mb-4">
+                        {{ bai_viet.noi_dung|linebreaks }}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h4 class="mb-3">Bình luận</h4>
+
+                    <!-- Danh sách bình luận -->
+                    <div class="mb-4">
+                        {% for binh_luan in binh_luans %}
+                            <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                                <p class="mb-1">
+                                    <strong>{{ binh_luan.user.username }}</strong>
+                                    <small class="text-muted">{{ binh_luan.ngay_tao|date:"d/m/Y H:i" }}</small>
+                                </p>
+                                <p class="mb-2">{{ binh_luan.noi_dung }}</p>
+                                
+                                <a href="#" class="reply-link text-decoration-none text-primary" data-id="{{ binh_luan.id }}">↪ Trả lời</a>
+
+                                {% for reply in binh_luan.phan_hoi.all %}
+                                    <div class="ms-4 mt-3 border-start ps-3 bg-white rounded shadow-sm">
+                                        <p class="mb-1">
+                                            <strong>{{ reply.user.username }}</strong>
+                                            <small class="text-muted">{{ reply.ngay_tao|date:"d/m/Y H:i" }}</small>
+                                        </p>
+                                        <p class="mb-2">{{ reply.noi_dung }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% empty %}
+                            <p>Chưa có bình luận nào.</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Form bình luận -->
+                    {% if user.is_authenticated %}
+                        <div class="card border-0 shadow-sm p-3">
+                            <form method="post" id="comment-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="parent_id" id="parent_id" value="">
+                                {% if form.errors %}
+                                    <div class="alert alert-danger">
+                                        <strong>Lỗi:</strong>
+                                        <ul class="mb-0">
+                                            {% for field in form %}
+                                                {% for error in field.errors %}
+                                                    <li>{{ error }}</li>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                                <div class="mb-3">
+                                    {{ form.noi_dung.label_tag }} {{ form.noi_dung }}
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> Gửi bình luận
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p>🔒 Vui lòng <a href="{% url 'login' %}">đăng nhập</a> để bình luận.</p>
+                    {% endif %}
+
+                    <!-- Các nút chức năng -->
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        {% if request.user.is_authenticated %}
+                            {% if request.user.username == bai_viet.tac_gia or la_admin %}
+                                <a href="{% url 'bai_viet:sua_bai_viet' pk=bai_viet.pk %}" class="btn btn-warning btn-sm d-flex align-items-center gap-1 shadow-sm" title="Sửa bài viết">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </a>
+                                <a href="{% url 'bai_viet:xoa_bai_viet' pk=bai_viet.pk %}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm" title="Xóa bài viết">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            {% endif %}
+
+                            
+
+                            {% if request.user.username != bai_viet.tac_gia and not la_admin %}
+                                <a href="{% url 'bai_viet:to_cao_bai_viet' bai_viet.pk %}" class="btn btn-warning btn-sm d-flex align-items-center gap-1 shadow-sm">
+                                    🚨 Tố cáo bài viết
+                                </a>
+                            {% endif %}
+                        {% endif %}
+
+
+                        <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm" title="Xem danh sách bài viết">
+                            <i class="bi bi-list-ul"></i> Danh sách
+                        </a>
+                        <a href="{% url 'bai_viet:home' %}" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm" title="Trang chủ">
+                            <i class="bi bi-house-door"></i> Trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.reply-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const commentId = this.getAttribute('data-id');
+            document.getElementById('parent_id').value = commentId;
+            const form = document.getElementById('comment-form');
+            form.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+                const textarea = form.querySelector('textarea');
+                if (textarea) textarea.focus();
+            }, 600);
+        });
+    });
+});
+</script>
+{% endblock %}

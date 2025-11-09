@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Hồ sơ của {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg border-0 overflow-hidden"
+       style="border-radius: 20px; background: #fffefb;">
+    
+    <!-- Ảnh bìa -->
+    <div class="position-relative" style="height: 180px; background: linear-gradient(120deg, #ffecd2, #fcb69f);">
+      <div class="position-absolute top-50 start-50 translate-middle text-center">
+        <img src="{{ user_obj.profile.image.url|default:'/static/img/default-avatar.png' }}"
+             alt="Avatar" class="rounded-circle shadow-lg"
+             style="width:130px; height:130px; object-fit:cover; border:5px solid white;">
+      </div>
+    </div>
+
+    <!-- Nội dung hồ sơ -->
+    <div class="card-body mt-5 text-center">
+      <h4 class="fw-bold">{{ user_obj.username }}</h4>
+      <p class="text-muted mb-1">{{ user_obj.email }}</p>
+      <p class="small text-secondary fst-italic">{{ user_obj.profile.bio|default:"Chưa có mô tả" }}</p>
+
+      {% if is_own_profile %}
+        <!-- Form cập nhật thông tin -->
+        <form method="POST" enctype="multipart/form-data" class="mt-4 text-start mx-auto" style="max-width: 400px;">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><i class="bx bx-user-circle text-primary me-2"></i>Tên người dùng</label>
+            {{ user_form.username|add_class:"form-control rounded-pill shadow-sm border-0" }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><i class="bx bx-envelope text-primary me-2"></i>Email</label>
+            {{ user_form.email|add_class:"form-control rounded-pill shadow-sm border-0" }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><i class="bx bx-edit text-primary me-2"></i>Giới thiệu ngắn</label>
+            {{ profile_form.bio|add_class:"form-control rounded-4 shadow-sm border-0" }}
+          </div>
+          <div class="text-center">
+            <button type="submit" name="update_info" class="btn btn-warning text-white rounded-pill px-4 shadow-sm">
+              💾 Lưu thay đổi
+            </button>
+          </div>
+        </form>
+
+        <!-- Cập nhật ảnh -->
+        <form method="POST" enctype="multipart/form-data" class="mt-3">
+          {% csrf_token %}
+          <label class="btn btn-outline-secondary btn-sm">
+            📸 {{ profile_form.image }}
+          </label>
+          <button type="submit" name="update_image" class="btn btn-outline-primary btn-sm">Cập nhật ảnh</button>
+        </form>
+      {% else %}
+        <!-- Nếu là người khác -->
+        <div class="mt-3">
+          <a href="{% url 'bai_viet:hop_thoai_user' user_obj.id %}" class="btn btn-outline-success rounded-pill px-4 me-2">
+            💬 Nhắn tin
+          </a>
+          <a href="{% url 'bai_viet:ket_ban' user_obj.id %}" class="btn btn-outline-primary rounded-pill px-4">
+            🤝 Kết bạn
+          </a>
+        </div>
+      {% endif %}
+
+      <hr class="my-4">
+
+      <!-- Thống kê -->
+      <div class="d-flex justify-content-around text-center">
+        <div>
+          <h6 class="fw-bold">{{ user_obj.date_joined|date:"d/m/Y" }}</h6>
+          <p class="text-muted small">Ngày tham gia</p>
+        </div>
+        <div>
+          <h6 class="fw-bold">{{ user_obj.posts.count|default:"0" }}</h6>
+          <p class="text-muted small">Bài viết</p>
+        </div>
+        <div>
+          <h6 class="fw-bold">{{ user_obj.ban_be.count|default:"0" }}</h6>
+          <p class="text-muted small">Bạn bè</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.card {
+  animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+input[type="file"] { display: none; }
+</style>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold text-gradient">
+      👥 Thành viên trong nhóm:
+      <span id="groupNameDisplay">{{ nhom.ten_nhom }}</span>
+    </h4>
+    <a href="{% url 'bai_viet:hop_thoai' %}" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm hover-lift">
+      ⬅️ Quay lại
+    </a>
+  </div>
+
+  <div id="alertBox" class="alert alert-success d-none fade show text-center shadow-sm rounded-pill" role="alert"></div>
+
+  <!-- Đổi tên nhóm -->
+  {% if request.user == nhom.truong_nhom %}
+  <div class="card border-0 shadow-sm mb-4 hover-card">
+    <div class="card-body">
+      <h5 class="card-title mb-3">✏️ Đổi tên nhóm</h5>
+      <form id="renameForm" method="post" class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+        {% csrf_token %}
+        <input type="text" id="newGroupName" class="form-control rounded-pill px-3 py-2"
+               name="ten_moi" placeholder="Nhập tên nhóm mới..." value="{{ nhom.ten_nhom }}" required>
+        <button type="submit" class="btn btn-success rounded-pill shadow-sm px-4">💾 Lưu</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Thêm thành viên -->
+  {% if request.user == nhom.truong_nhom %}
+  <div class="card border-0 shadow-sm mb-4 hover-card">
+    <div class="card-body">
+      <h5 class="card-title mb-3">➕ Thêm thành viên</h5>
+      <form method="post" action="{% url 'bai_viet:them_thanh_vien' nhom.id %}" class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+        {% csrf_token %}
+        <div class="flex-grow-1 position-relative">
+          <input type="text" id="friendSearch" class="form-control mb-2 rounded-pill px-3 py-2"
+                 placeholder="🔍 Tìm bạn bè..." onkeyup="filterFriends()">
+          <select id="friendSelect" class="form-select rounded-pill px-3" name="user_id" required>
+            <option value="">-- Chọn bạn bè --</option>
+            {% for friend in ban_be %}
+              <option value="{{ friend.id }}">{{ friend.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary rounded-pill shadow-sm px-4">
+          <i class="bi bi-person-plus-fill me-1"></i> Thêm
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Danh sách thành viên -->
+  <div class="card border-0 shadow-sm hover-card">
+    <div class="card-body p-0">
+      <ul class="list-group list-group-flush">
+        {% for tv in thanh_vien %}
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 member-item"
+            style="transition: all 0.25s ease;">
+          <div class="d-flex align-items-center">
+            <div class="avatar-initial me-3 shadow-sm" data-name="{{ tv.username }}"></div>
+            <div>
+              <strong>{{ tv.username }}</strong><br>
+              <small class="text-muted">@{{ tv.username|lower }}</small>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            {% if tv == nhom.truong_nhom %}
+              <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">👑 Trưởng nhóm</span>
+            {% elif tv.is_admin %}
+              <span class="badge bg-secondary px-3 py-2 rounded-pill">🛠️ Quản trị viên</span>
+            {% elif request.user == tv %}
+              <span class="badge bg-info text-dark px-3 py-2 rounded-pill">🙋‍♂️ Bạn</span>
+            {% else %}
+              <span class="badge bg-light text-dark px-3 py-2 rounded-pill">🧑 Thành viên</span>
+            {% endif %}
+
+            {% if request.user == nhom.truong_nhom and tv != nhom.truong_nhom %}
+              <form method="post" action="{% url 'bai_viet:toggle_quyen_thanh_vien' nhom.id tv.id %}">
+                {% csrf_token %}
+                {% if tv.is_admin %}
+                  <button type="submit" class="btn btn-outline-warning btn-sm rounded-pill">⬇️ Hạ quyền</button>
+                {% else %}
+                  <button type="submit" class="btn btn-outline-success btn-sm rounded-pill">⬆️ Chuyển quyền</button>
+                {% endif %}
+              </form>
+
+              <form action="{% url 'bai_viet:kick_thanh_vien' nhom.id tv.id %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill"
+                        onclick="return confirm('Bạn có chắc muốn xoá {{ tv.username }} khỏi nhóm?');">
+                  ❌ Kick
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted py-3">
+          😔 Nhóm chưa có thành viên nào.
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- CSS -->
+<style>
+.text-gradient { background: linear-gradient(45deg, #007bff, #6610f2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hover-card { transition: all 0.3s ease; }
+.hover-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.15)!important; }
+.hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
+.avatar-initial {
+  width: 45px; height: 45px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; color: white; text-transform: uppercase;
+  transition: transform 0.2s ease;
+}
+.avatar-initial:hover { transform: scale(1.1); }
+.member-item:hover { background: #f9fafc; transform: translateY(-2px); }
+</style>
+
+<!-- Script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const palette = ["#E53935","#8E24AA","#3949AB","#039BE5","#00897B","#43A047","#C0CA33","#FB8C00","#6D4C41","#546E7A"];
+  function hashColor(str){
+    let hash = 0;
+    for (let i=0; i<str.length; i++){ hash = str.charCodeAt(i) + ((hash<<5)-hash); }
+    return palette[Math.abs(hash)%palette.length];
+  }
+  document.querySelectorAll(".avatar-initial").forEach(a=>{
+    const name=a.dataset.name;
+    a.textContent=name[0].toUpperCase();
+    a.style.background=hashColor(name);
+  });
+
+  // Hiển thị alert khi đổi tên nhóm
+  const renameForm = document.getElementById("renameForm");
+  const alertBox = document.getElementById("alertBox");
+  renameForm?.addEventListener("submit", e => {
+    e.preventDefault();
+    const newName = document.getElementById("newGroupName").value.trim();
+    if(!newName) return;
+    alertBox.textContent = `✅ Đã đổi tên nhóm thành "${newName}"`;
+    alertBox.classList.remove("d-none");
+    document.getElementById("groupNameDisplay").textContent = newName;
+    setTimeout(()=>{ alertBox.classList.add("d-none"); }, 3000);
+  });
+});
+
+function filterFriends() {
+  const input = document.getElementById("friendSearch").value.toLowerCase();
+  const select = document.getElementById("friendSelect");
+  const options = select.options;
+  for (let i=0;i<options.length;i++){
+    const txt = options[i].text.toLowerCase();
+    options[i].style.display = (txt.includes(input) || options[i].value==="") ? "" : "none";
+  }
+}
+</script>
+{% endblock %}

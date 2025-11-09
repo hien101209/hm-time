@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}Tìm kiếm: {{ query }}{% endblock %}
+
+{% block content %}
+<style>
+/* ===================== Body & Glass ===================== */
+  body {
+    background: url('/static/images/bg-blog.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: -1;
+  }
+  .container-glass {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+    padding: 3rem 2rem;
+  }
+
+  /* ===================== Tiêu đề trang ===================== */
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(to right, #a67c00, #ffcc00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glow 2s infinite ease-in-out;
+  }
+  @keyframes glow {
+    0% { text-shadow: 0 0 5px #ffdd66; }
+    50% { text-shadow: 0 0 15px #ffaa00; }
+    100% { text-shadow: 0 0 5px #ffdd66; }
+  }
+
+  /* ===================== Bài viết nổi bật ===================== */
+  .highlight-scroll-wrapper {
+    position: relative;
+    margin-bottom: 2.5rem;
+  }
+  .highlight-scroll-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    background: #fffdf5;
+    color: #333;
+    padding: 0.6rem 1rem;
+    border-left: 5px solid #ffc107;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .highlight-scroll {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    scrollbar-width: none;
+  }
+  .highlight-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ===================== Thẻ nổi bật ===================== */
+  .highlight-card-horizontal {
+    min-width: 340px;
+    max-width: 340px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fffaf0;
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.3);
+    border-left: 6px solid #fbc02d;
+    transition: transform 0.3s, box-shadow 0.3s ease;
+  }
+  .highlight-card-horizontal:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(255, 193, 7, 0.5);
+  }
+
+/* ===================== Ảnh và overlay tiêu đề ===================== */
+  .highlight-img-wrapper {
+    position: relative;
+    width: 100%;
+    height: 220px; /* ↑ tăng từ 220px lên 300px */
+    overflow: hidden;
+    border-bottom: 4px solid #ffd700;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* đậm hơn */
+  }
+  .highlight-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .highlight-card-horizontal:hover img {
+    transform: scale(1.05);
+  }
+  .title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem 1.25rem; /* tăng padding */
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+    color: #fff;
+    font-size: 1.4rem; /* ↑ tăng từ 1.3rem */
+    font-weight: 800;
+    text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
+  }
+
+
+  /* ===================== Nút kéo ngang ===================== */
+  .scroll-btn {
+    position: absolute;
+    top: 40%;
+    transform: translateY(-50%);
+    background-color: #ffeb3b;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    font-size: 1.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    z-index: 1;
+    transition: background-color 0.2s;
+  }
+  .scroll-btn.left { left: -10px; }
+  .scroll-btn.right { right: -10px; }
+  .scroll-btn:hover { background-color: #fdd835; }
+
+  /* ===================== Bài viết thường ===================== */
+  .post-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid #eee;
+  }
+
+  .post-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    border-color: #f1c40f;
+  }
+
+  .post-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-bottom: 4px solid #ffd700;
+  }
+
+  .post-card-body {
+    padding: 1rem;
+  }
+  .post-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .post-card-date {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 1rem;
+  }
+
+  /* ===================== Badge tùy chỉnh ===================== */
+  .badge-custom {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.5rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .badge-new {
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    color: white;
+  }
+  .badge-hot {
+    background: linear-gradient(to right, #f7971e, #ffd200);
+    color: black;
+  }
+
+  /* ===================== Phân trang ===================== */
+  .page-link {
+    font-weight: 600;
+    color: #444;
+    border: none;
+    padding: 0.5rem 0.9rem;
+    transition: all 0.25s ease;
+  }
+  .page-link:hover {
+    background: linear-gradient(to right, #ffe57f, #ffd740);
+    color: black;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .page-item.active .page-link {
+    background: linear-gradient(to right, #ffca28, #fdd835);
+    color: black;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  }
+  .page-item.disabled .page-link {
+    color: #aaa;
+    background-color: #f9f9f9;
+    border: none;
+  }
+
+  /* ===================== Button "Xem tất cả" ===================== */
+  .btn-view-all {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 2rem;
+    background: linear-gradient(to right, #f9d423, #ff4e50);
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  .btn-view-all i {
+    margin-right: 0.5rem;
+    transition: transform 0.3s ease;
+  }
+  .btn-view-all:hover {
+    background: linear-gradient(to right, #ff4e50, #f9d423);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  }
+  .btn-view-all:hover i {
+    transform: translateX(5px);
+  }
+  .btn-overlay:hover {
+    background: #ffc107;
+    color: #222;
+  }
+  .title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
+  }
+</style>
+
+<div class="container container-glass">
+  <div class="page-header">
+    <h2>🔍 Kết quả tìm kiếm cho: "<strong>{{ query }}</strong>"</h2>
+    <form method="get" class="row g-3 mb-4">
+      <input type="hidden" name="q" value="{{ query }}">
+
+      <div class="col-md-3">
+        <input type="text" name="tac_gia" class="form-control" placeholder="👤 Tác giả"
+              value="{{ tac_gia }}">
+      </div>
+      <div class="col-md-3">
+        <select name="danh_muc" class="form-control">
+          <option value="">📁 -- Chọn danh mục --</option>
+          {% for muc in danh_mucs %}
+            <option value="{{ muc }}" {% if muc == danh_muc %}selected{% endif %}>{{ muc }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="ngay_dang" class="form-control" value="{{ ngay_dang }}">
+      </div>
+      <div class="col-md-3 d-flex">
+        <button type="submit" class="btn btn-primary me-2">
+          <i class="bi bi-filter"></i> Lọc
+        </button>
+        <a href="{% url 'bai_viet:tim_kiem' %}?q={{ query }}" class="btn btn-outline-secondary">Đặt lại</a>
+      </div>
+    </form>
+    {% if tac_gia or danh_muc or ngay_dang %}
+      <p class="text-muted small">
+        Đang lọc:
+        {% if tac_gia %} 👤 Tác giả: <strong>{{ tac_gia }}</strong> {% endif %}
+        {% if danh_muc %} - 📁 Danh mục: <strong>{{ danh_muc }}</strong> {% endif %}
+        {% if ngay_dang %} - 📅 Ngày đăng: <strong>{{ ngay_dang }}</strong> {% endif %}
+      </p>
+    {% endif %}
+
+  </div>
+  {% if ket_qua %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      {% for bai in ket_qua %}
+        <div class="col">
+          <a href="{% url 'bai_viet:chi_tiet_bai_viet' bai.id %}">
+            <div class="post-card h-100">
+              <div class="highlight-img-wrapper" style="height: 220px;">
+                {% if bai.hinh_anh %}
+                  <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}">
+                {% else %}
+                  <img src="https://via.placeholder.com/600x220?text=No+Image" alt="No image">
+                {% endif %}
+              </div>
+              <div class="post-card-body">
+                <div class="post-card-title">
+                  {{ bai.tieu_de }}
+                  {% if bai.ngay_dang|date:"Ymd" == today|date:"Ymd" %}
+                    <span class="badge-custom badge-new">🆕 Mới đăng</span>
+                  {% endif %}
+                  {% if bai.noi_bat %}
+                    <span class="badge-custom badge-hot">🔥 Nổi bật</span>
+                  {% endif %}
+                </div>
+                <div class="post-card-date">
+                  <i class="bx bx-calendar"></i> {{ bai.ngay_dang|date:"d/m/Y" }}
+                </div>
+                <p>{{ bai.tom_tat|truncatewords:20 }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-center text-muted">Không tìm thấy bài viết nào phù hợp.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Tố cáo: {{ bai_viet.tieu_de }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow rounded-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">🚨 Tố cáo bài viết: "{{ bai_viet.tieu_de }}"</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Ngày đăng:</strong> {{ bai_viet.ngay_dang|date:"d/m/Y H:i" }}</p>
+            <hr>
+
+            <!-- Chưa xử lý -->
+            <div class="mb-4">
+                <h5 class="text-warning">
+                    ⏳ Chưa xử lý 
+                    <span class="badge bg-warning text-dark">{{ chua_xu_ly|length }}</span>
+                </h5>
+                {% if chua_xu_ly %}
+                    <ul class="list-group">
+                        {% for tc in chua_xu_ly %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ tc.nguoi_to_cao.username }}</strong> 
+                                    <small class="text-muted">({{ tc.ngay_to_cao|date:"d/m/Y H:i" }})</small><br>
+                                    <em>Lý do:</em> {{ tc.ly_do }}
+                                </div>
+                                <div class="text-end">
+                                    <a href="{% url 'bai_viet:danh_dau_xu_ly_tocao' tc.id %}" 
+                                       class="btn btn-success btn-sm">
+                                        ✅ Đánh dấu đã xử lý
+                                    </a>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-light text-muted">Không có tố cáo chưa xử lý.</div>
+                {% endif %}
+            </div>
+
+            <!-- Đã xử lý -->
+            <div>
+                <h5 class="text-success">
+                    ✅ Đã xử lý 
+                    <span class="badge bg-success">{{ da_xu_ly|length }}</span>
+                </h5>
+                {% if da_xu_ly %}
+                    <ul class="list-group">
+                        {% for tc in da_xu_ly %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ tc.nguoi_to_cao.username }}</strong> 
+                                    <small class="text-muted">({{ tc.ngay_to_cao|date:"d/m/Y H:i" }})</small><br>
+                                    <em>Lý do:</em> {{ tc.ly_do }}
+                                </div>
+                                <div class="text-end">
+                                    <a href="{% url 'bai_viet:danh_dau_xu_ly_tocao' tc.id %}" 
+                                       class="btn btn-warning btn-sm">
+                                        ↩️ Đánh dấu chưa xử lý
+                                    </a>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-light text-muted">Không có tố cáo đã xử lý.</div>
+                {% endif %}
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'bai_viet:danh_sach_to_cao' %}" class="btn btn-secondary">
+                    ← Quay lại danh sách
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

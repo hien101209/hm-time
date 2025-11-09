@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-lg border-0 rounded-3">
+    <div class="card-body">
+      <h4 class="mb-3 text-primary">➕ Tạo nhóm mới</h4>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="tenNhom" class="form-label fw-bold">Tên nhóm</label>
+          <input type="text" class="form-control" id="tenNhom" name="ten_nhom" placeholder="Nhập tên nhóm..." required>
+        </div>
+
+        <!-- Thanh công cụ -->
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+          <input type="text" class="form-control flex-grow-1" id="timKiemBanBe" placeholder="🔍 Tìm bạn bè...">
+          <select id="sortSelect" class="form-select form-select-sm" style="width:auto;">
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-info" onclick="chonNgauNhien(3)">🎲 Random 3</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="chonTatCa()">Chọn tất cả</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="boChonTatCa()">Bỏ chọn tất cả</button>
+        </div>
+
+        <!-- Tiêu đề + badge số lượng -->
+        <h5 class="fw-bold mb-2 d-flex align-items-center justify-content-between">
+          <span>Chọn thành viên (tối đa 10):</span>
+          <span class="badge bg-primary" id="badgeSoLuong">0</span>
+        </h5>
+
+        <!-- Danh sách bạn bè -->
+        <div class="list-group mb-2" id="danhSachBanBe" style="max-height: 300px; overflow-y: auto;">
+          {% for friend in ban_be %}
+          {% with first_letter=friend.username|slice:":1"|upper %}
+          <label class="list-group-item d-flex align-items-center justify-content-between list-group-item-action rounded mb-1 selectable" data-name="{{ friend.username }}">
+            <div class="d-flex align-items-center">
+              <div class="avatar-initial me-2 border shadow-sm" data-name="{{ friend.username }}" title="👤 {{ friend.username }}"></div>
+              <input 
+                class="form-check-input me-2" 
+                type="checkbox" 
+                name="thanh_vien" 
+                value="{{ friend.id }}"
+                data-name="{{ friend.username }}"
+                onchange="capNhatSoLuong(this)"
+              >
+              <span>{{ friend.username }}</span>
+            </div>
+            <i class="bi bi-person-check text-muted"></i>
+          </label>
+          {% endwith %}
+          {% empty %}
+          <p class="text-muted" id="khongCoBanBe">⚠️ Bạn chưa có bạn bè nào để thêm vào nhóm.</p>
+          {% endfor %}
+        </div>
+
+        <!-- Preview thành viên đã chọn -->
+        <div id="previewThanhVien" class="mb-2 d-flex flex-wrap gap-2"></div>
+
+        <p class="text-end text-muted" id="soLuongChon">Đã chọn: 0</p>
+        <input type="hidden" name="nhom_truong" id="nhomTruongInput">
+
+        <!-- Nút hành động -->
+        <div class="mt-3 d-flex justify-content-between">
+          <a href="{% url 'bai_viet:danh_sach_nhom' %}" class="btn btn-outline-secondary">❌ Hủy</a>
+          <button type="submit" class="btn btn-success" id="btnSubmit" disabled>✅ Tạo nhóm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.list-group-item:hover { background-color: #f9f9f9; transition: background-color 0.2s; }
+.avatar-initial {
+  width: 36px; height: 36px; color: white; font-weight: bold;
+  display: flex; justify-content: center; align-items: center;
+  border-radius: 50%; text-transform: uppercase;
+  border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  font-size: 14px;
+}
+.selectable:has(input:checked) { background-color: #e8f4ff !important; border: 1px solid #b6e0fe; transform: scale(1.01); transition: all 0.2s ease; }
+#badgeSoLuong { font-size: 0.9rem; padding: 4px 8px; border-radius: 12px; }
+.selected-member { animation: fadeIn 0.3s ease; cursor: grab; border:1px solid #ddd; padding:4px 6px; border-radius:6px; display:flex; align-items:center; gap:4px;}
+.selected-member.dragging { opacity: 0.5; }
+.selected-member.leader { border: 2px solid #f39c12 !important; background-color: #fff8e1 !important; }
+.btn-truong { font-size: 0.75rem; }
+@keyframes fadeIn { from {opacity:0; transform:scale(0.9);} to {opacity:1; transform:scale(1);} }
+</style>
+
+<script>
+const MAX_THANH_VIEN = 10;
+const danhSach = document.getElementById("danhSachBanBe");
+const soLuongText = document.getElementById("soLuongChon");
+const badgeSoLuong = document.getElementById("badgeSoLuong");
+const btnSubmit = document.getElementById("btnSubmit");
+const preview = document.getElementById("previewThanhVien");
+
+function capNhatSoLuong(cb=null){
+  const checkboxes = Array.from(danhSach.querySelectorAll("input[type='checkbox']"));
+  const checked = checkboxes.filter(c=>c.checked);
+  if(checked.length > MAX_THANH_VIEN){
+    if(cb) cb.checked=false;
+    alert(`❌ Chỉ được chọn tối đa ${MAX_THANH_VIEN} thành viên.`);
+    return capNhatSoLuong();
+  }
+
+  soLuongText.textContent=`Đã chọn: ${checked.length}`;
+  badgeSoLuong.textContent = checked.length;
+  btnSubmit.disabled = checked.length===0;
+  btnSubmit.textContent = checked.length>0 ? `✅ Tạo nhóm (${checked.length})` : "✅ Tạo nhóm";
+
+  if(cb){
+    const id=cb.value;
+    const name=cb.dataset.name;
+    if(cb.checked){
+      if(!preview.querySelector(`[data-id="${id}"]`)){
+        const div=document.createElement("div");
+        div.className="selected-member";
+        div.setAttribute("data-id",id);
+        div.setAttribute("draggable","true");
+        div.innerHTML=`
+          <div class="avatar-initial" data-name="${name}" title="👤 ${name}">${name[0].toUpperCase()}</div>
+          <span>${name}</span>
+          <button type="button" class="btn btn-sm btn-outline-warning btn-truong" data-id="${id}">👑 Trưởng</button>
+          <button type="button" class="btn-close remove-btn"></button>
+        `;
+        preview.appendChild(div);
+
+        div.querySelector(".remove-btn").addEventListener("click", ()=>{
+          div.remove();
+          cb.checked=false;
+          // reset nhóm trưởng nếu là người này
+          if(document.getElementById("nhomTruongInput").value===id){
+            document.getElementById("nhomTruongInput").value="";
+          }
+          capNhatSoLuong();
+        });
+
+        enableDragAndDrop(div);
+      }
+    } else {
+      const target = preview.querySelector(`[data-id="${id}"]`);
+      if(target) target.remove();
+      if(document.getElementById("nhomTruongInput").value===id) document.getElementById("nhomTruongInput").value="";
+    }
+  }
+}
+
+// chọn tất cả / bỏ chọn tất cả
+function chonTatCa(){ danhSach.querySelectorAll("input[type='checkbox']").forEach(cb=>{ if(!cb.checked){ cb.checked=true; capNhatSoLuong(cb); } }); }
+function boChonTatCa(){ danhSach.querySelectorAll("input[type='checkbox']").forEach(cb=>{ if(cb.checked){ cb.checked=false; capNhatSoLuong(cb); } }); }
+
+// random
+function chonNgauNhien(n){
+  const cbs=Array.from(danhSach.querySelectorAll("input[type='checkbox']"));
+  boChonTatCa();
+  cbs.sort(()=>0.5-Math.random()).slice(0,n).forEach(cb=>{ cb.checked=true; capNhatSoLuong(cb); });
+}
+
+// tìm kiếm
+document.getElementById("timKiemBanBe").addEventListener("keyup",function(){
+  const filter=this.value.toLowerCase();
+  let coBanBe=false;
+  danhSach.querySelectorAll("label").forEach(item=>{
+    const name=item.dataset.name.toLowerCase();
+    const visible=name.includes(filter);
+    item.style.display=visible?"":"none";
+    if(visible) coBanBe=true;
+  });
+  const khongCoBanBe=document.getElementById("khongCoBanBe");
+  if(khongCoBanBe) khongCoBanBe.style.display=coBanBe?"none":"";
+});
+
+// sắp xếp
+document.getElementById("sortSelect").addEventListener("change",function(){
+  const items=Array.from(danhSach.querySelectorAll("label"));
+  const sorted=items.sort((a,b)=>{
+    const aName=a.dataset.name.toLowerCase(), bName=b.dataset.name.toLowerCase();
+    return this.value==="az"?aName.localeCompare(bName):bName.localeCompare(aName);
+  });
+  danhSach.innerHTML="";
+  sorted.forEach(i=>danhSach.appendChild(i));
+});
+
+// drag & drop
+function enableDragAndDrop(el){
+  el.addEventListener("dragstart",e=>{ e.dataTransfer.setData("id",el.dataset.id); el.classList.add("dragging"); });
+  el.addEventListener("dragend",()=>el.classList.remove("dragging"));
+}
+preview.addEventListener("dragover",e=>{
+  e.preventDefault();
+  const dragging=preview.querySelector(".dragging");
+  const after=Array.from(preview.children).find(child=>e.clientX <= child.offsetLeft + child.offsetWidth/2);
+  if(after) preview.insertBefore(dragging,after); else preview.appendChild(dragging);
+});
+
+// chọn nhóm trưởng
+preview.addEventListener("click",function(e){
+  if(e.target.classList.contains("btn-truong")){
+    const id=e.target.dataset.id;
+    // bỏ highlight cũ
+    preview.querySelectorAll(".selected-member").forEach(el=>{
+      el.classList.remove("leader");
+      el.querySelector(".btn-truong").textContent="👑 Trưởng";
+    });
+    // set highlight mới
+    const memberDiv=preview.querySelector(`[data-id="${id}"]`);
+    memberDiv.classList.add("leader");
+    memberDiv.querySelector(".btn-truong").textContent="✅ Đang là trưởng";
+    document.getElementById("nhomTruongInput").value=id;
+  }
+});
+
+// avatar color
+document.addEventListener("DOMContentLoaded",function(){
+  const palette=["#E53935","#D81B60","#8E24AA","#5E35B1","#3949AB","#1E88E5","#039BE5","#00ACC1","#00897B","#43A047","#7CB342","#C0CA33","#FDD835","#FB8C00","#F4511E","#6D4C41","#757575","#546E7A"];
+  function stringToHash(str){ let h=0; for(let i=0;i<str.length;i++){h=str.charCodeAt(i)+((h<<5)-h); h&=h; } return Math.abs(h); }
+  function applyColor(el,name){
+    const hash=stringToHash(name.toLowerCase());
+    const c1=palette[hash%palette.length], c2=palette[(hash+7)%palette.length], c3=palette[(hash+13)%palette.length];
+    el.style.background=(hash%4===0)?c1:(hash%4===1)?`linear-gradient(135deg,${c1},${c2})`:`linear-gradient(135deg,${c1},${c2},${c3})`;
+    el.textContent=name[0].toUpperCase();
+  }
+  document.querySelectorAll(".avatar-initial").forEach(el=>{ const n=el.getAttribute("data-name"); if(n) applyColor(el,n); });
+  new MutationObserver(m=>m.forEach(x=>x.addedNodes.forEach(node=>node.querySelectorAll?.(".avatar-initial").forEach(el=>{ const n=el.getAttribute("data-name"); if(n) applyColor(el,n); }))))
+    .observe(document.getElementById("previewThanhVien"),{childList:true});
+});
+</script>
+{% endblock %}
