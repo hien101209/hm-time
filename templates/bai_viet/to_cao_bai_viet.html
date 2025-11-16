@@ -2,18 +2,58 @@
 {% load static %}
 
 {% block content %}
+<style>
+    /* Glassmorphism for card */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 20px;
+    }
+
+    /* Fancy button */
+    .btn-danger {
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+    .btn-danger:hover {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+
+    .btn-secondary {
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-weight: 600;
+    }
+
+    textarea {
+        border-radius: 12px !important;
+        min-height: 140px;
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow rounded-4 p-4">
-                <h2 class="mb-4 text-danger">🚨 Tố cáo bài viết</h2>
-                <p><strong>Bài viết:</strong> {{ bai_viet.tieu_de }}</p>
 
-                {# ✅ Hiển thị thông báo thành công/thất bại #}
+            <div class="glass-card shadow-lg p-4">
+                <h2 class="mb-4 fw-bold text-danger">
+                    🚨 Tố cáo bài viết
+                </h2>
+
+                <p class="mb-4">
+                    <strong>Bài viết:</strong> 
+                    <span class="text-primary fw-semibold">{{ bai_viet.tieu_de }}</span>
+                </p>
+
+                {# 🔔 Thông báo Django messages #}
                 {% if messages %}
                     {% for message in messages %}
                         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
+                            <strong>Thông báo:</strong> {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     {% endfor %}
@@ -23,10 +63,9 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        {{ form.ly_do.label_tag }}
+                        <label class="fw-semibold mb-2">{{ form.ly_do.label }}</label>
                         {{ form.ly_do }}
-                        
-                        {# ✅ Nếu có lỗi thì hiện dưới textarea #}
+
                         {% if form.ly_do.errors %}
                             <div class="invalid-feedback d-block">
                                 {{ form.ly_do.errors.as_text|escape }}
@@ -34,12 +73,15 @@
                         {% endif %}
                     </div>
 
-                    <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-danger">Gửi tố cáo</button>
-                        <a href="{% url 'bai_viet:chi_tiet_bai_viet' bai_viet.pk %}" class="btn btn-secondary">Quay lại</a>
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-danger">📮 Gửi tố cáo</button>
+                        <a href="{% url 'bai_viet:chi_tiet_bai_viet' bai_viet.pk %}" 
+                           class="btn btn-secondary">⬅️ Quay lại</a>
                     </div>
                 </form>
+
             </div>
+
         </div>
     </div>
 </div>
