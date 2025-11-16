@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils.text import slugify
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -38,7 +39,29 @@ class BaiViet(models.Model):
         if not self.slug:
             self.slug = slugify(self.tieu_de)
         super().save(*args, **kwargs)
+    def cache_key(self):
+        return f"bai_{self.pk}"
 
+    def get_cached(self):
+        key = self.cache_key()
+        data = cache.get(key)
+        if not data:
+            data = {
+                "id": self.id,
+                "tieu_de": self.tieu_de,
+                "noi_dung": self.noi_dung,
+                "ngay_dang": self.ngay_dang,
+                "tac_gia": self.tac_gia_id,
+                "slug": self.slug,
+            }
+            cache.set(key, data, 60)
+        return data
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("ds_bai_viet_home")
+        cache.delete(f"bai_{self.pk}")
+        cache.delete(f"baiviet_{self.slug}")
     class Meta:
         permissions = [
             ("can_approve_post", "Có thể phê duyệt bài viết"),

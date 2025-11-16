@@ -26,7 +26,6 @@ from django.core.cache import cache
 from .forms import UserUpdateForm, ProfileUpdateForm
 from .models import Profile
 
-
 def generate_unique_slug(title):
     slug = slugify(title)
     original_slug = slug
@@ -140,10 +139,22 @@ def xoa_bai_viet(request, pk):
 @login_required
 def danh_sach_bai_viet(request):
     is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
+
+    # Tạo cache key theo toàn bộ URL
+    cache_key = f"danh_sach_bai_viet:{request.get_full_path()}:{is_admin}"
+    cached_page = cache.get(cache_key)
+
+    if cached_page:
+        print("⚡ CACHE HIT - danh sách bài viết")
+        return cached_page
+
+    print("💥 CACHE MISS - danh sách bài viết")
+
     if is_admin:
         danh_sach = BaiViet.objects.all()
     else:
         danh_sach = BaiViet.objects.filter(tac_gia=request.user)
+
     # --- Lọc ---
     tac_gia = request.GET.get('tac_gia', '').strip()
     danh_muc = request.GET.get('danh_muc', '').strip()
@@ -160,80 +171,91 @@ def danh_sach_bai_viet(request):
     danh_sach = danh_sach.order_by('-ngay_dang')
 
     # --- Phân trang ---
-    paginator = Paginator(danh_sach, 6)  # 6 bài mỗi trang
+    paginator = Paginator(danh_sach, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'bai_viet/danh_sach_bai_viet.html', {
+    response = render(request, 'bai_viet/danh_sach_bai_viet.html', {
         'danh_sach': page_obj,
         'is_admin': is_admin  
     })
 
+    # Cache trong 30 giây
+    cache.set(cache_key, response, 30)
+
+    return response
+
 def chi_tiet_bai_viet(request, pk):
+
+    cache_key = f"chi_tiet_bai_viet:{pk}"
+    cached_page = cache.get(cache_key)
+
+    if cached_page and request.method != 'POST':
+        print("⚡ CACHE HIT - chi tiết bài")
+        return cached_page
+
+    print("💥 CACHE MISS - chi tiết bài")
+
     bai_viet = get_object_or_404(BaiViet, pk=pk)
     binh_luans = bai_viet.binh_luans.filter(parent__isnull=True).order_by('-ngay_tao')
     is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
 
+    form = BinhLuanForm()
 
-    if request.method == 'POST':
-        if not request.user.is_authenticated:
-            return redirect('login')
-        form = BinhLuanForm(request.POST)
-        if form.is_valid():
-            binh_luan = form.save(commit=False)
-            binh_luan.bai_viet = bai_viet
-            binh_luan.user = request.user
-
-            # 👇 Xử lý trả lời bình luận (nếu có)
-            parent_id = request.POST.get('parent_id')
-            if parent_id:
-                try:
-                    parent = BinhLuan.objects.get(id=parent_id)
-                    binh_luan.parent = parent
-                except BinhLuan.DoesNotExist:
-                    pass
-
-            binh_luan.save()
-            return redirect('bai_viet:chi_tiet_bai_viet', pk=bai_viet.pk)
-
-    else:
-        form = BinhLuanForm()
-
-    # ✅ Thêm dòng kiểm tra user có phải Admin không
-    la_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
-
-    return render(request, 'bai_viet/chi_tiet_bai_viet.html', {
+    response = render(request, 'bai_viet/chi_tiet_bai_viet.html', {
         'bai_viet': bai_viet,
         'binh_luans': binh_luans,
         'form': form,
-        'la_admin': la_admin,# 👈 Truyền biến vào template
+        'la_admin': is_admin,
         'is_admin': is_admin  
     })
 
+    cache.set(cache_key, response, 60)
+    return response
+
 def home(request):
+    cache_key = f"home:{request.get_full_path()}"
+    cached_page = cache.get(cache_key)
+
+    if cached_page:
+        print("⚡ CACHE HIT - home")
+        return cached_page
+
+    print("💥 CACHE MISS - home")
+
     bai_viet_noi_bat = BaiViet.objects.filter(noi_bat=True).order_by('-ngay_dang')
-    danh_sach_bai_viet = BaiViet.objects.exclude(id__in=bai_viet_noi_bat.values_list('id', flat=True)).order_by('-ngay_dang')
+    danh_sach_bai_viet = BaiViet.objects.exclude(
+        id__in=bai_viet_noi_bat.values_list('id', flat=True)
+    ).order_by('-ngay_dang')
 
     paginator = Paginator(danh_sach_bai_viet, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
 
-    # 👇 kiểm tra quyền tại đây
+    is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
     can_approve = request.user.has_perm("bai_viet.can_approve_post")
 
-    print(is_admin)
-
-
-    return render(request, 'bai_viet/home.html', {
+    response = render(request, 'bai_viet/home.html', {
         'bai_viet_noi_bat': bai_viet_noi_bat,
         'bai_viets': page_obj,
         'today': date.today(),
-        'can_approve': can_approve,  # ✅ truyền biến vào template
+        'can_approve': can_approve,
         'is_admin': is_admin
     })
 
+    cache.set(cache_key, response, 30)
+    return response
+
 def tim_kiem(request):
+    cache_key = f"tim_kiem:{request.get_full_path()}"
+    cached_page = cache.get(cache_key)
+
+    if cached_page:
+        print("⚡ CACHE HIT - tìm kiếm")
+        return cached_page
+
+    print("💥 CACHE MISS - tìm kiếm")
+
     query = request.GET.get('q', '').strip()
     tac_gia = request.GET.get('tac_gia', '').strip()
     danh_muc = request.GET.get('danh_muc', '').strip()
@@ -244,20 +266,17 @@ def tim_kiem(request):
 
     if query:
         ket_qua = ket_qua.filter(tieu_de__icontains=query)
-
     if tac_gia:
         ket_qua = ket_qua.filter(tac_gia__icontains=tac_gia)
-
     if danh_muc:
         ket_qua = ket_qua.filter(danh_muc__icontains=danh_muc)
-
     if ngay_dang:
         ket_qua = ket_qua.filter(ngay_dang__date=ngay_dang)
 
     danh_mucs = BaiViet.objects.values_list('danh_muc', flat=True).distinct()
     tac_gias = BaiViet.objects.values_list('tac_gia', flat=True).distinct()
 
-    return render(request, 'bai_viet/tim_kiem.html', {
+    response = render(request, 'bai_viet/tim_kiem.html', {
         'query': query,
         'tac_gia': tac_gia,
         'danh_muc': danh_muc,
@@ -269,6 +288,8 @@ def tim_kiem(request):
         'is_admin': is_admin
     })
 
+    cache.set(cache_key, response, 30)
+    return response
 
 def phe_duyet_bai(request, bai_id):
     bai_viet = get_object_or_404(BaiViet, id=bai_id)
