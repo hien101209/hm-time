@@ -29,6 +29,9 @@ class BaiViet(models.Model):
         blank=True
     )
 
+    luot_xem = models.PositiveIntegerField(default=0)
+
+
     def __str__(self):
         return self.tieu_de
 

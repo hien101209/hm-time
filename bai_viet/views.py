@@ -185,19 +185,30 @@ def danh_sach_bai_viet(request):
 
     return response
 
+from django.db.models import F
+
 def chi_tiet_bai_viet(request, pk):
 
+    # --- Không tăng view khi POST (ví dụ gửi bình luận)
+    if request.method != 'POST':
+        # 🔥 Cập nhật lượt xem an toàn (không bị đè khi có nhiều request)
+        BaiViet.objects.filter(pk=pk).update(luot_xem=F('luot_xem') + 1)
+
+    # --- Cache key
     cache_key = f"chi_tiet_bai_viet:{pk}"
     cached_page = cache.get(cache_key)
 
+    # --- Dùng cache khi GET
     if cached_page and request.method != 'POST':
         print("⚡ CACHE HIT - chi tiết bài")
         return cached_page
 
     print("💥 CACHE MISS - chi tiết bài")
 
+    # --- Load lại để lấy số view mới nhất
     bai_viet = get_object_or_404(BaiViet, pk=pk)
     binh_luans = bai_viet.binh_luans.filter(parent__isnull=True).order_by('-ngay_tao')
+
     is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
 
     form = BinhLuanForm()
@@ -207,14 +218,20 @@ def chi_tiet_bai_viet(request, pk):
         'binh_luans': binh_luans,
         'form': form,
         'la_admin': is_admin,
-        'is_admin': is_admin  
+        'is_admin': is_admin
     })
 
-    cache.set(cache_key, response, 60)
+    # --- Cache trang trong 60 giây (GET)
+    if request.method != 'POST':
+        cache.set(cache_key, response, 60)
+
     return response
 
 def home(request):
-    cache_key = f"home:{request.get_full_path()}"
+    page_number = request.GET.get("page", 1)
+
+    # Cache theo trang để tránh tạo quá nhiều key
+    cache_key = f"home:page:{page_number}"
     cached_page = cache.get(cache_key)
 
     if cached_page:
@@ -223,13 +240,15 @@ def home(request):
 
     print("💥 CACHE MISS - home")
 
-    bai_viet_noi_bat = BaiViet.objects.filter(noi_bat=True).order_by('-ngay_dang')
+    # 🔥 TOP 6 bài viết có lượt xem cao nhất
+    bai_viet_noi_bat = BaiViet.objects.order_by('-luot_xem')[:6]
+
+    # 🔥 Các bài khác
     danh_sach_bai_viet = BaiViet.objects.exclude(
         id__in=bai_viet_noi_bat.values_list('id', flat=True)
     ).order_by('-ngay_dang')
 
     paginator = Paginator(danh_sach_bai_viet, 6)
-    page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     is_admin = request.user.is_authenticated and request.user.groups.filter(name='Admin').exists()
@@ -243,8 +262,9 @@ def home(request):
         'is_admin': is_admin
     })
 
-    cache.set(cache_key, response, 30)
+    cache.set(cache_key, response, 15)  # 👉 giảm xuống 15 giây là tối ưu
     return response
+
 
 def tim_kiem(request):
     cache_key = f"tim_kiem:{request.get_full_path()}"
