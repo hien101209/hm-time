@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'about_me',
     'bai_viet',
     'accounts',
+    'game',
 ]
 
 MIDDLEWARE = [

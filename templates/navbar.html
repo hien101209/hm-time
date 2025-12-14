@@ -99,6 +99,9 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'bai_viet:danh_sach_bai_viet' %}">Bài viết</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'game:list' %}">Game</a>
+            </li>
             {% if user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'bai_viet:profile' user.id %}">Tài khoản</a>

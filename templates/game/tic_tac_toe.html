@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Tic Tac Toe 5x5{% endblock %}
+{% block content %}
+
+<style>
+.game-box {
+    max-width: 560px;
+    margin: 50px auto;
+    padding: 30px;
+    background: linear-gradient(135deg,#ffffff20,#ffffff10);
+    backdrop-filter: blur(14px);
+    border-radius: 28px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 25px auto;
+    border: 5px solid #222;
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.cell {
+    width: 90px;
+    height: 90px;
+    font-size: 42px;
+    font-weight: 900;
+    background: #f8f9fa;
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-right: 4px solid #222;
+    border-bottom: 4px solid #222;
+
+    transition: 0.15s ease;
+}
+
+.cell:nth-child(5n) {
+    border-right: none;
+}
+
+.cell:nth-last-child(-n+5) {
+    border-bottom: none;
+}
+
+.cell:hover {
+    background: #e9ecef;
+    transform: scale(1.05);
+}
+
+.cell.x {
+    color: #ff4d6d;
+    text-shadow: 0 0 6px #ff4d6d88;
+}
+
+.cell.o {
+    color: #339af0;
+    text-shadow: 0 0 6px #339af088;
+}
+
+.cell.win {
+    background: linear-gradient(135deg,#ffe066,#ffd43b);
+    box-shadow: inset 0 0 15px #fab005;
+    animation: winFlash 0.6s infinite alternate;
+}
+
+@keyframes winFlash {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.3); }
+}
+
+select, button {
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: none;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+button {
+    background: #4dabf7;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #339af0;
+}
+</style>
+
+<div class="game-box">
+    <h2>❌⭕ Tic Tac Toe 5×5</h2>
+
+    <select id="mode" onchange="resetGame()">
+        <option value="easy">🟢 Dễ</option>
+        <option value="medium">🟡 Trung bình</option>
+        <option value="hard">🔴 Khó</option>
+        <option value="asia">🟣 Châu Á</option>
+    </select>
+
+    <div class="board" id="board"></div>
+    <div id="status">Lượt của bạn (❌)</div>
+
+    <button onclick="resetGame()">🔄 Chơi lại</button>
+</div>
+
+<script>
+const SIZE = 5;
+const WIN = 5;
+
+let board = Array(SIZE * SIZE).fill("");
+let gameOver = false;
+let winCells = [];
+
+const boardEl = document.getElementById("board");
+const statusEl = document.getElementById("status");
+
+function draw(){
+ boardEl.innerHTML="";
+ board.forEach((v,i)=>{
+  const c=document.createElement("div");
+  c.className="cell";
+  if(v==="❌")c.classList.add("x");
+  if(v==="⭕")c.classList.add("o");
+  if(winCells.includes(i))c.classList.add("win");
+  c.innerText=v;
+  c.onclick=()=>move(i);
+  boardEl.appendChild(c);
+ });
+}
+
+function move(i){
+ if(board[i]||gameOver)return;
+ board[i]="❌";
+ if(checkWin())return;
+ setTimeout(aiMove,300);
+}
+
+function aiMove(){
+ const mode=document.getElementById("mode").value;
+ let i;
+ if(mode==="easy") i=randomMove();
+ if(mode==="medium") i=blockMove();
+ if(mode==="hard") i=attackMove();
+ if(mode==="asia") i=bestHeuristic();
+ board[i]="⭕";
+ checkWin();
+}
+
+function randomMove(){
+ return emptyCells()[Math.floor(Math.random()*emptyCells().length)];
+}
+
+function blockMove(){
+ return findLine("❌") ?? randomMove();
+}
+
+function attackMove(){
+ return findLine("⭕") ?? blockMove();
+}
+
+/* AI Châu Á – đánh gần tâm + ưu tiên chuỗi dài */
+function bestHeuristic(){
+ let center=12;
+ if(!board[center]) return center;
+ return attackMove();
+}
+
+function findLine(player){
+ for(let line of winLines()){
+  let vals=line.map(i=>board[i]);
+  if(vals.filter(v=>v===player).length===4 && vals.includes(""))
+   return line[vals.indexOf("")];
+ }
+ return null;
+}
+
+function emptyCells(){
+ return board.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+}
+
+/* TẠO TOÀN BỘ CÁC DÒNG THẮNG */
+function winLines(){
+ let lines=[];
+ for(let r=0;r<SIZE;r++)
+  for(let c=0;c<=SIZE-WIN;c++){
+   lines.push([...Array(WIN)].map((_,i)=>r*SIZE+c+i));
+   lines.push([...Array(WIN)].map((_,i)=>(c+i)*SIZE+r));
+  }
+
+ for(let r=0;r<=SIZE-WIN;r++)
+  for(let c=0;c<=SIZE-WIN;c++){
+   lines.push([...Array(WIN)].map((_,i)=>(r+i)*SIZE+c+i));
+   lines.push([...Array(WIN)].map((_,i)=>(r+WIN-1-i)*SIZE+c+i));
+  }
+ return lines;
+}
+
+function checkWin(){
+ for(let line of winLines()){
+  let v=board[line[0]];
+  if(v && line.every(i=>board[i]===v)){
+   winCells=line;
+   statusEl.innerText=v+" thắng!";
+   gameOver=true;
+   draw();
+   return true;
+  }
+ }
+ if(!board.includes("")){
+  statusEl.innerText="🤝 Hòa!";
+  gameOver=true;
+ }
+ draw(); return false;
+}
+
+function resetGame(){
+ board=Array(SIZE*SIZE).fill("");
+ gameOver=false;
+ winCells=[];
+ statusEl.innerText="Lượt của bạn (❌)";
+ draw();
+}
+
+draw();
+</script>
+
+{% endblock %}

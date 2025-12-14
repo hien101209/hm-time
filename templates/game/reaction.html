@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Reaction Game{% endblock %}
+{% block content %}
+
+<style>
+.box {
+    max-width: 460px;
+    margin: 60px auto;
+    padding: 30px;
+    text-align: center;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+}
+
+#playBox {
+    height: 150px;
+    border-radius: 15px;
+    background: #ff4d4d;
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.green {
+    background: #2ecc71 !important;
+}
+
+table {
+    width: 100%;
+    margin-top: 15px;
+}
+</style>
+
+<div class="box">
+    <h2>⚡ Reaction Game</h2>
+    <p>Chờ ô chuyển xanh rồi CLICK!</p>
+
+    <div id="playBox">CHỜ...</div>
+    <p id="result"></p>
+
+    <hr>
+    <h4>🏆 BXH</h4>
+    <table>
+        <tr><th>#</th><th>Player</th><th>ms</th></tr>
+        {% for s in top_scores %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ s.user.username }}</td>
+            <td>{{ s.time_ms }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+let startTime = 0;
+let canClick = false;
+
+const box = document.getElementById("playBox");
+const result = document.getElementById("result");
+
+setTimeout(() => {
+    box.classList.add("green");
+    box.innerText = "CLICK!";
+    startTime = Date.now();
+    canClick = true;
+}, {{ delay }});
+
+box.onclick = () => {
+    if (!canClick) {
+        result.innerText = "❌ Bấm sớm quá!";
+        return;
+    }
+    const time = Date.now() - startTime;
+    result.innerText = "⚡ " + time + " ms";
+    canClick = false;
+
+    fetch("{% url 'game:save_reaction' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: "time_ms=" + time
+    }).then(() => location.reload());
+};
+</script>
+
+{% endblock %}

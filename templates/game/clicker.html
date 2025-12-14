@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Clicker Game{% endblock %}
+{% block content %}
+
+<style>
+.clicker-container {
+    max-width: 460px;
+    margin: 60px auto;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+#clickBtn {
+    padding: 20px 60px;
+    font-size: 26px;
+    font-weight: bold;
+    border-radius: 15px;
+    border: none;
+    background: #ff4d4d;
+    color: white;
+    cursor: pointer;
+}
+
+#clickBtn:disabled {
+    background: gray;
+}
+
+table {
+    width: 100%;
+    margin-top: 15px;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 8px;
+}
+
+tr:nth-child(odd) {
+    background: rgba(255,255,255,0.1);
+}
+</style>
+
+<div class="clicker-container">
+    <h2>🎯 Clicker Game</h2>
+    <p>Nhấn càng nhiều càng tốt trong 10 giây!</p>
+
+    <div class="stats">
+        <span>⏱ <b id="time">10</b>s</span>
+        <span>⭐ <b id="score">0</b></span>
+    </div>
+
+    <button id="clickBtn">CLICK!</button>
+    <p id="result"></p>
+
+    <hr>
+
+    <h4>🏆 Bảng xếp hạng</h4>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Người chơi</th>
+            <th>Điểm</th>
+        </tr>
+        {% for s in top_scores %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ s.user.username }}</td>
+            <td>{{ s.score }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">Chưa có dữ liệu</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+let score = 0;
+let timeLeft = 10;
+let started = false;
+
+const scoreEl = document.getElementById("score");
+const timeEl = document.getElementById("time");
+const btn = document.getElementById("clickBtn");
+const resultEl = document.getElementById("result");
+
+btn.onclick = () => {
+    if (!started) {
+        started = true;
+        startTimer();
+    }
+    score++;
+    scoreEl.innerText = score;
+};
+
+function startTimer() {
+    const timer = setInterval(() => {
+        timeLeft--;
+        timeEl.innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.disabled = true;
+            resultEl.innerText = "🎉 Hết giờ! Điểm: " + score;
+            saveScore();
+        }
+    }, 1000);
+}
+
+function saveScore() {
+    fetch("{% url 'game:save_score' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: "score=" + score
+    }).then(() => location.reload());
+}
+</script>
+
+{% endblock %}

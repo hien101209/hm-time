@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Kho game{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center fw-bold mb-4">🎮 Kho Game</h2>
+
+    <div class="row g-4">
+        {% for game in games %}
+        <div class="col-md-4">
+            <div class="card shadow rounded-4 p-3 h-100">
+                <h5 class="fw-bold">{{ game.name }}</h5>
+                <p>{{ game.desc }}</p>
+                <a href="{% url game.url_name %}" class="btn btn-primary">
+                    ▶️ Chơi
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

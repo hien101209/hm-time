@@ -28,6 +28,7 @@ urlpatterns = [
         path('', include('django.contrib.auth.urls')),  # login, logout, password reset...
         path('', include('accounts.urls')),  # signup, profile... (bạn tạo riêng)
     ])),
+    path('game/', include('game.urls')),
 ]
 
 if settings.DEBUG:
