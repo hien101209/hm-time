@@ -29,8 +29,8 @@ def game_list(request):
         "url_name": "game:tic_tac_toe"   # ✅ ĐÚNG namespace
     },
     {
-        "name": "Mini Chess",
-        "desc": "Cờ vua rút gọn 8x8",
+        "name": "Chess",
+        "desc": "Cờ vua",
         "url_name": "game:chess"
     },
 ]
