@@ -1,15 +1,52 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}My Website{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link href={%static 'css/style.css'%}>
+    <link href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #ff9800;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #ffb366;
+        }
+        
+        [data-bs-theme="dark"] {
+            --bg-card: #212529;
+            --text-primary: #e9ecef;
+            --border-color: #495057;
+        }
+        
+        [data-bs-theme="light"] {
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --border-color: #dee2e6;
+        }
+        
+        body {
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        .card {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
 
 </head>
 <body>
@@ -44,10 +81,18 @@
   }
 </style>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const avatars = document.querySelectorAll(".avatar-initial");
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<script>
+// Dark Mode Toggle
+document.addEventListener("DOMContentLoaded", function () {
+  // Initialize theme from localStorage
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-bs-theme', savedTheme);
+  
+  // Avatar initialization
+  const avatars = document.querySelectorAll(".avatar-initial");
   const palette = [
     "#E53935", "#D81B60", "#8E24AA", "#5E35B1",
     "#3949AB", "#1E88E5", "#039BE5", "#00ACC1",
@@ -72,19 +117,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const initial = name[0].toUpperCase();
     el.textContent = initial;
 
-    const hash = stringToHash(name.toLowerCase()); // luôn lowercase để đồng bộ
+    const hash = stringToHash(name.toLowerCase());
     const color1 = palette[hash % palette.length];
     const color2 = palette[(hash + 7) % palette.length];
     const color3 = palette[(hash + 13) % palette.length];
 
-    // chọn kiểu màu theo hash
     let bg;
     if (hash % 4 === 0) {
-      bg = color1; // 1 màu
+      bg = color1;
     } else if (hash % 4 === 1) {
-      bg = `linear-gradient(135deg, ${color1}, ${color2})`; // 2 màu
+      bg = `linear-gradient(135deg, ${color1}, ${color2})`;
     } else {
-      bg = `linear-gradient(135deg, ${color1}, ${color2}, ${color3})`; // 3 màu
+      bg = `linear-gradient(135deg, ${color1}, ${color2}, ${color3})`;
     }
 
     el.style.background = bg;
@@ -100,6 +144,15 @@ document.addEventListener("DOMContentLoaded", function () {
     el.style.fontSize = "16px";
     el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
   });
+  
+  // Dark mode toggle function (can be called from navbar)
+  window.toggleDarkMode = function() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-bs-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-bs-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
 });
 </script>
 </html>

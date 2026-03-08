@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}Flappy Bird Game{% endblock %}
+{% block content %}
+
+<style>
+.flappy-container {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 30px rgba(255, 152, 0, 0.2);
+    text-align: center;
+}
+
+.flappy-container h2 {
+    color: white;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+#gameCanvas {
+    border: 3px solid white;
+    background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.flappy-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.flappy-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.flappy-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.flappy-stats {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    color: white;
+    margin-top: 1.5rem;
+}
+
+.stat-item {
+    display: inline-block;
+    margin: 0.5rem 1rem;
+    font-size: 1.1rem;
+}
+
+.stat-label {
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+#currentScore {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.instructions {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-top: 1.5rem;
+    text-align: left;
+}
+
+.instructions h4 {
+    margin-bottom: 1rem;
+    color: #ffb366;
+}
+
+.instructions ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.instructions li {
+    margin-bottom: 0.5rem;
+}
+
+.leaderboard {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    margin-top: 2rem;
+}
+
+.leaderboard h4 {
+    color: #ff9800;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard th, 
+.leaderboard td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard th {
+    color: #ff9800;
+    font-weight: 700;
+}
+
+.leaderboard tr:hover {
+    background: var(--bg-secondary);
+}
+</style>
+
+<div class="flappy-container">
+    <h2>🐦 Flappy Bird</h2>
+    <div id="currentScore">Score: 0</div>
+    
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    
+    <div class="flappy-controls">
+        <button class="flappy-btn" onclick="startFlappyGame()">🎮 Bắt đầu</button>
+        <button class="flappy-btn" onclick="resetFlappyGame()">🔄 Làm lại</button>
+    </div>
+    
+    <div class="instructions">
+        <h4>Hướng dẫn chơi:</h4>
+        <ul>
+            <li>Nhấn <strong>chuột</strong> hoặc <strong>Spacebar</strong> để bay</li>
+            <li>Tránh va chạm với các ống</li>
+            <li>Mỗi ống vượt qua = 1 điểm</li>
+            <li>Đừng rơi xuống đất hoặc va chạm với ống</li>
+        </ul>
+    </div>
+    
+    <div class="flappy-stats">
+        <div class="stat-item">
+            <span class="stat-label">Trạng thái:</span>
+            <span id="flappyStatus">Chưa bắt đầu</span>
+        </div>
+    </div>
+</div>
+
+{% if top_scores %}
+<div class="container" style="margin-top: 3rem;">
+    <div class="leaderboard">
+        <h4>🏆 Top 10 Điểm cao nhất</h4>
+        <table>
+            <tr>
+                <th>Xếp hạng</th>
+                <th>Người chơi</th>
+                <th>Điểm</th>
+                <th>Ngày</th>
+            </tr>
+            {% for score in top_scores %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ score.user.username }}</td>
+                <td><strong>{{ score.score }}</strong></td>
+                <td>{{ score.created_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game variables
+let bird = {
+    x: 50,
+    y: 250,
+    width: 30,
+    height: 30,
+    dy: 0,
+    gravity: 0.5,
+    jump: -8
+};
+
+let pipes = [];
+let score = 0;
+let gameRunning = false;
+let gamePaused = false;
+let pipeGap = 120;
+let pipeWidth = 60;
+let pipeInterval = 0;
+
+// Event listeners
+window.addEventListener('click', jump);
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        jump();
+    }
+});
+
+function jump() {
+    if (gameRunning && !gamePaused) {
+        bird.dy = bird.jump;
+    }
+}
+
+function startFlappyGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        gamePaused = false;
+        document.getElementById('flappyStatus').textContent = 'Đang chơi';
+        update();
+    }
+}
+
+function resetFlappyGame() {
+    bird.y = 250;
+    bird.dy = 0;
+    pipes = [];
+    score = 0;
+    gameRunning = false;
+    pipeInterval = 0;
+    document.getElementById('currentScore').textContent = 'Score: 0';
+    document.getElementById('flappyStatus').textContent = 'Chưa bắt đầu';
+    draw();
+}
+
+function update() {
+    if (!gameRunning) return;
+    
+    // Update bird
+    bird.dy += bird.gravity;
+    bird.y += bird.dy;
+    
+    // Check collision with ground and ceiling
+    if (bird.y + bird.height >= canvas.height || bird.y <= 0) {
+        endFlappyGame();
+        return;
+    }
+    
+    // Create pipes
+    pipeInterval++;
+    if (pipeInterval > 100) {
+        let gapStart = Math.random() * (canvas.height - pipeGap - 50) + 25;
+        pipes.push({
+            x: canvas.width,
+            gapStart: gapStart,
+            gapEnd: gapStart + pipeGap
+        });
+        pipeInterval = 0;
+    }
+    
+    // Update pipes
+    for (let i = 0; i < pipes.length; i++) {
+        pipes[i].x -= 5;
+        
+        // Check collision with pipe
+        if (bird.x < pipes[i].x + pipeWidth &&
+            bird.x + bird.width > pipes[i].x &&
+            (bird.y < pipes[i].gapStart || bird.y + bird.height > pipes[i].gapEnd)) {
+            endFlappyGame();
+            return;
+        }
+        
+        // Check if passed pipe
+        if (pipes[i].x + pipeWidth < bird.x && !pipes[i].scored) {
+            pipes[i].scored = true;
+            score++;
+            document.getElementById('currentScore').textContent = 'Score: ' + score;
+        }
+        
+        // Remove off-screen pipes
+        if (pipes[i].x + pipeWidth < 0) {
+            pipes.splice(i, 1);
+            i--;
+        }
+    }
+    
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    // Draw background
+    ctx.fillStyle = '#87CEEB';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw ground
+    ctx.fillStyle = '#8B7355';
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+    
+    // Draw bird
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(bird.x + 5, bird.y + 5, 5, 5);
+    
+    // Draw pipes
+    ctx.fillStyle = '#228B22';
+    for (let pipe of pipes) {
+        // Top pipe
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.gapStart);
+        // Bottom pipe
+        ctx.fillRect(pipe.x, pipe.gapEnd, pipeWidth, canvas.height - pipe.gapEnd - 40);
+    }
+}
+
+function endFlappyGame() {
+    gameRunning = false;
+    document.getElementById('flappyStatus').textContent = 'Đã kết thúc';
+    
+    fetch('{% url "game:save_flappy" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'score=' + score,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}
+    });
+    
+    if (confirm('Game Over! Điểm của bạn: ' + score + '\nChơi lại?')) {
+        resetFlappyGame();
+        startFlappyGame();
+    }
+}
+
+draw();
+</script>
+
+{% endblock %}

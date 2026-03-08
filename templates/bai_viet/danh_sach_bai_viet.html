@@ -4,144 +4,225 @@
 
 {% block content %}
 <style>
-  .post-card {
-    background: #ffffff;
+  .posts-header {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    padding: 2.5rem 0;
+    margin-bottom: 2.5rem;
     border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: transform 0.2s;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+  }
+
+  [data-bs-theme="dark"] .posts-header {
+    background: linear-gradient(135deg, #e68900 0%, #ff9800 100%);
+  }
+
+  .post-card {
+    background: var(--bg-card);
+    border-radius: 0.875rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
   }
+
   .post-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
   }
+
   .post-image-wrapper {
     position: relative;
+    overflow: hidden;
+    height: 200px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   }
+
+  [data-bs-theme="dark"] .post-image-wrapper {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  }
+
   .post-image-wrapper img {
     width: 100%;
-    height: 180px;
+    height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
   }
+
+  .post-card:hover .post-image-wrapper img {
+    transform: scale(1.05);
+  }
+
   .post-title-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
     color: #fff;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    font-size: 1.05rem;
-  }
-  .badge-featured {
-    background-color: gold;
-    color: black;
-    font-weight: bold;
-    padding: 0.2rem 0.5rem;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
-  }
-  .post-card-body {
     padding: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    line-height: 1.4;
+  }
+
+  .badge-featured {
+    background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+    color: white;
+    font-weight: 700;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .post-card-body {
+    padding: 1.25rem;
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
   }
+
   .post-card-date {
-    font-size: 0.9rem;
-    color: #888;
-    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+    color: #6c757d;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .post-card-actions a {
-    margin-right: 0.5rem;
+
+  [data-bs-theme="dark"] .post-card-date {
+    color: #adb5bd;
+  }
+
+  .post-card-description {
+    font-size: 0.95rem;
+    color: #5a6c7d;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+    line-height: 1.5;
+  }
+
+  [data-bs-theme="dark"] .post-card-description {
+    color: #ccc;
+  }
+
+  .post-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  .btn-sm {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .posts-header {
+      padding: 1.5rem 0;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 </style>
 
-<h1 class="mb-4">📃 Danh sách bài viết</h1>
-
-<div class="d-flex justify-content-end mb-3">
-  <a class="btn btn-success" href="{% url 'bai_viet:tao_bai_viet' %}">
-    <i class="bx bx-plus"></i> Tạo bài viết mới
-  </a>
+<div class="posts-header">
+  <div class="container">
+    <h1 class="mb-0 fw-bold">
+      <i class="bi bi-file-earmark-text"></i> Danh sách bài viết
+    </h1>
+  </div>
 </div>
 
-{% if danh_sach %}
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-    {% for bai in danh_sach %}
-      <div class="col">
-        <div class="card post-card h-100 border-0">
-          <div class="post-image-wrapper">
-            {% if bai.hinh_anh %}
-              <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}">
-            {% else %}
-              <img src="https://via.placeholder.com/600x180?text=No+Image" alt="No image">
-            {% endif %}
-            <div class="post-title-overlay">
-              {{ bai.tieu_de }}
-              {% if bai.noi_bat %}
-                <span class="badge-featured float-end">🌟 Nổi bật</span>
-              {% endif %}
-            </div>
-          </div>
-          <div class="post-card-body">
-            <div class="post-card-date">
-              <i class="bx bx-calendar"></i> {{ bai.ngay_dang|date:"d/m/Y H:i" }}
-            </div>
-            {% if bai.mo_ta %}
-              <p style="font-size: 0.95rem; color: #555;">
-                {{ bai.mo_ta|truncatechars:100 }}
-              </p>
-            {% endif %}
-            <div class="post-card-actions mt-auto">
-              <a class="btn btn-sm btn-info" href="{% url 'bai_viet:chi_tiet_bai_viet' pk=bai.pk %}">
-                <i class="bx bx-show"></i> Xem
-              </a>
-              <a class="btn btn-sm btn-warning" href="{% url 'bai_viet:sua_bai_viet' pk=bai.pk %}">
-                <i class="bx bx-edit"></i> Sửa
-              </a>
-              <a class="btn btn-sm btn-danger"
-                 href="{% url 'bai_viet:xoa_bai_viet' pk=bai.pk %}"
-                 onclick="return confirm('Bạn có chắc muốn xóa bài viết này?');">
-                <i class="bx bx-trash"></i> Xóa
-              </a>
+<div class="container">
+  <div class="filter-section">
+    <div>
+      <span class="badge bg-info">
+        <i class="bi bi-collection"></i> Tổng: {{ danh_sach|length }} bài viết
+      </span>
+    </div>
+    <a class="btn btn-success btn-lg" href="{% url 'bai_viet:tao_bai_viet' %}">
+      <i class="bi bi-plus-lg"></i> Tạo bài viết mới
+    </a>
+  </div>
 
-              {% if request.user.is_superuser or request.user.groups.first.name == 'Admin' %}
-                {% if not bai.noi_bat %}
-                  <a href="{% url 'bai_viet:duyet_noi_bat' bai.id %}" class="btn btn-sm btn-outline-success">
-                    ✅ Duyệt nổi bật
-                  </a>
-                {% endif %}
+  {% if danh_sach %}
+    <div class="row g-4">
+      {% for bai in danh_sach %}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card post-card h-100">
+            <div class="post-image-wrapper">
+              {% if bai.hinh_anh %}
+                <img src="{{ bai.hinh_anh.url }}" alt="{{ bai.tieu_de }}" loading="lazy">
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                  <i class="bi bi-image fs-4"></i>
+                </div>
               {% endif %}
+              <div class="post-title-overlay">
+                {{ bai.tieu_de }}
+                {% if bai.noi_bat %}
+                  <span class="badge-featured float-end">
+                    <i class="bi bi-star-fill"></i> Nổi bật
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="post-card-body">
+              <div class="post-card-date">
+                <i class="bi bi-calendar-event"></i> 
+                {{ bai.ngay_dang|date:"d/m/Y H:i" }}
+              </div>
+              {% if bai.mo_ta %}
+                <p class="post-card-description">
+                  {{ bai.mo_ta|truncatechars:100 }}
+                </p>
+              {% endif %}
+              <div class="post-card-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'bai_viet:chi_tiet_bai_viet' pk=bai.pk %}">
+                  <i class="bi bi-eye"></i> Xem
+                </a>
+                <a class="btn btn-sm btn-outline-warning" href="{% url 'bai_viet:sua_bai_viet' pk=bai.pk %}">
+                  <i class="bi bi-pencil"></i> Sửa
+                </a>
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'bai_viet:xoa_bai_viet' pk=bai.pk %}">
+                  <i class="bi bi-trash"></i> Xóa
+                </a>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
-
-  {% if danh_sach.has_other_pages %}
-    <nav class="mt-4">
-      <ul class="pagination justify-content-center">
-        {% if danh_sach.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ danh_sach.previous_page_number }}">&laquo;</a>
-          </li>
-        {% endif %}
-        {% for i in danh_sach.paginator.page_range %}
-          <li class="page-item {% if i == danh_sach.number %}active{% endif %}">
-            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-          </li>
-        {% endfor %}
-        {% if danh_sach.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ danh_sach.next_page_number }}">&raquo;</a>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info alert-lg text-center" role="alert">
+      <i class="bi bi-info-circle fs-5"></i>
+      <h5 class="mt-2">Chưa có bài viết nào</h5>
+      <p class="mb-3">Hãy tạo bài viết đầu tiên của bạn để bắt đầu!</p>
+      <a href="{% url 'bai_viet:tao_bai_viet' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg"></i> Tạo bài viết mới
+      </a>
+    </div>
   {% endif %}
-{% else %}
-  <div class="alert alert-info mt-3">Không có bài viết nào.</div>
-{% endif %}
+</div>
 
 {% endblock %}

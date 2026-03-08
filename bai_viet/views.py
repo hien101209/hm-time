@@ -25,6 +25,8 @@ from datetime import timedelta
 from django.core.cache import cache
 from .forms import UserUpdateForm, ProfileUpdateForm
 from .models import Profile
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User, Group
 
 def generate_unique_slug(title):
     slug = slugify(title)

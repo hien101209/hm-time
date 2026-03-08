@@ -3,130 +3,330 @@
 
 {% block content %}
 <style>
+    .article-header {
+        background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+        color: white;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0.75rem;
+    }
+
+    [data-bs-theme="dark"] .article-header {
+        background: linear-gradient(135deg, #e68900 0%, #ff9800 100%);
+    }
+
+    .article-card {
+        background: var(--bg-card);
+        border-radius: 0.875rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .article-image {
+        width: 100%;
+        height: auto;
+        max-height: 450px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .article-content {
+        padding: 2rem;
+    }
+
+    .article-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+        color: inherit;
+    }
+
+    .article-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .meta-item strong {
+        color: inherit;
+    }
+
+    .rich-content {
+        font-size: 1.05rem;
+        line-height: 1.8;
+        color: inherit;
+        margin-bottom: 2rem;
+    }
+
     .rich-content p {
-        margin-bottom: 1.2rem;
-        line-height: 1.9;
-        font-size: 1.1rem;
+        margin-bottom: 1.25rem;
         text-align: justify;
+    }
+
+    .rich-content h2 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .comments-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--border-color);
+    }
+
+    .comment-item {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .comment-item:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .comment-author {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .comment-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    [data-bs-theme="dark"] .comment-time {
+        color: #adb5bd;
+    }
+
+    .comment-reply {
+        margin-left: 2rem;
+        border-left: 3px solid #ff9800;
+        padding-left: 1rem;
+        margin-top: 1rem;
+    }
+
+    .comment-form {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .article-content {
+            padding: 1.5rem;
+        }
+
+        .article-title {
+            font-size: 1.75rem;
+        }
+
+        .article-meta {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .comment-reply {
+            margin-left: 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-action {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>
 
-<div class="container py-5">
+<div class="article-header">
+    <div class="container">
+        <h1 class="mb-0 fw-bold">
+            <i class="bi bi-file-earmark-text"></i> {{ bai_viet.tieu_de }}
+        </h1>
+    </div>
+</div>
+
+<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow-lg rounded-4 border-0 overflow-hidden">
+            <article class="article-card">
                 {% if bai_viet.hinh_anh %}
-                    <img src="{{ bai_viet.hinh_anh.url }}" class="img-fluid w-100 rounded-top-4 shadow-sm" style="max-height: 420px; object-fit: cover;" alt="{{ bai_viet.tieu_de|default:'Ảnh bài viết' }}">
+                    <img src="{{ bai_viet.hinh_anh.url }}" class="article-image" alt="{{ bai_viet.tieu_de|default:'Ảnh bài viết' }}">
                 {% endif %}
                 
-                <div class="p-4 p-md-5">
-                    <h1 class="fw-bold mb-3" style="font-size: 2.25rem; background: linear-gradient(to right, #ff6a00, #ee0979); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
-                        {{ bai_viet.tieu_de }}
-                    </h1>
+                <div class="article-content">
+                    <h1 class="article-title">{{ bai_viet.tieu_de }}</h1>
 
-                    <div class="text-muted mb-4 d-flex flex-wrap gap-4" style="font-size: 0.95rem;">
-                        <div><i class="bi bi-person-fill me-1"></i> <strong>Tác giả:</strong> {{ bai_viet.tac_gia }}</div>
-                        <div><i class="bi bi-calendar-event me-1"></i> <strong>Ngày đăng:</strong> {{ bai_viet.ngay_dang|date:"d/m/Y H:i" }}</div>
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            <i class="bi bi-person-circle"></i>
+                            <span><strong>Tác giả:</strong> {{ bai_viet.tac_gia }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-calendar-event"></i>
+                            <span><strong>Ngày đăng:</strong> {{ bai_viet.ngay_dang|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% if bai_viet.luot_xem %}
+                            <div class="meta-item">
+                                <i class="bi bi-eye"></i>
+                                <span><strong>Lượt xem:</strong> {{ bai_viet.luot_xem }}</span>
+                            </div>
+                        {% endif %}
                     </div>
 
-                    <hr>
-
-                    <div class="rich-content fs-5 mb-4">
+                    <div class="rich-content">
                         {{ bai_viet.noi_dung|linebreaks }}
                     </div>
 
-                    <hr class="my-4">
+                    <!-- Comments Section -->
+                    <div class="comments-section">
+                        <h3 class="mb-4">
+                            <i class="bi bi-chat-dots"></i> Bình luận 
+                            <span class="badge bg-secondary">{{ binh_luans|length }}</span>
+                        </h3>
 
-                    <h4 class="mb-3">Bình luận</h4>
-
-                    <!-- Danh sách bình luận -->
-                    <div class="mb-4">
-                        {% for binh_luan in binh_luans %}
-                            <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
-                                <p class="mb-1">
-                                    <strong>{{ binh_luan.user.username }}</strong>
-                                    <small class="text-muted">{{ binh_luan.ngay_tao|date:"d/m/Y H:i" }}</small>
-                                </p>
-                                <p class="mb-2">{{ binh_luan.noi_dung }}</p>
-                                
-                                <a href="#" class="reply-link text-decoration-none text-primary" data-id="{{ binh_luan.id }}">↪ Trả lời</a>
-
-                                {% for reply in binh_luan.phan_hoi.all %}
-                                    <div class="ms-4 mt-3 border-start ps-3 bg-white rounded shadow-sm">
-                                        <p class="mb-1">
-                                            <strong>{{ reply.user.username }}</strong>
-                                            <small class="text-muted">{{ reply.ngay_tao|date:"d/m/Y H:i" }}</small>
-                                        </p>
-                                        <p class="mb-2">{{ reply.noi_dung }}</p>
+                        <!-- Comments List -->
+                        <div class="mb-4">
+                            {% for binh_luan in binh_luans %}
+                                <div class="comment-item">
+                                    <div class="comment-author d-flex align-items-center gap-2">
+                                        <div class="avatar-initial" data-name="{{ binh_luan.user.username }}"></div>
+                                        {{ binh_luan.user.username }}
                                     </div>
-                                {% endfor %}
+                                    <div class="comment-time">
+                                        <i class="bi bi-clock"></i> {{ binh_luan.ngay_tao|date:"d/m/Y H:i" }}
+                                    </div>
+                                    <p class="mb-2 mt-2">{{ binh_luan.noi_dung }}</p>
+                                    
+                                    <a href="#comment-form" class="reply-link btn btn-sm btn-outline-primary" data-id="{{ binh_luan.id }}">
+                                        <i class="bi bi-reply"></i> Trả lời
+                                    </a>
+
+                                    {% for reply in binh_luan.phan_hoi.all %}
+                                        <div class="comment-reply">
+                                            <div class="comment-author d-flex align-items-center gap-2">
+                                                <div class="avatar-initial" data-name="{{ reply.user.username }}"></div>
+                                                {{ reply.user.username }}
+                                            </div>
+                                            <div class="comment-time">
+                                                <i class="bi bi-clock"></i> {{ reply.ngay_tao|date:"d/m/Y H:i" }}
+                                            </div>
+                                            <p class="mb-0 mt-2">{{ reply.noi_dung }}</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% empty %}
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Comment Form -->
+                        {% if user.is_authenticated %}
+                            <div class="comment-form" id="comment-form">
+                                <h5 class="mb-3">
+                                    <i class="bi bi-pencil-square"></i> Viết bình luận
+                                </h5>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent_id" id="parent_id" value="">
+                                    {% if form.errors %}
+                                        <div class="alert alert-danger alert-dismissible fade show">
+                                            <strong><i class="bi bi-exclamation-triangle"></i> Lỗi:</strong>
+                                            <ul class="mb-0">
+                                                {% for field in form %}
+                                                    {% for error in field.errors %}
+                                                        <li>{{ error }}</li>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </ul>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    {% endif %}
+                                    <div class="mb-3">
+                                        {{ form.noi_dung.label_tag }}
+                                        {{ form.noi_dung }}
+                                        {% if form.noi_dung.help_text %}
+                                            <small class="form-text text-muted d-block">{{ form.noi_dung.help_text|safe }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-action">
+                                        <i class="bi bi-send"></i> Gửi bình luận
+                                    </button>
+                                </form>
                             </div>
-                        {% empty %}
-                            <p>Chưa có bình luận nào.</p>
-                        {% endfor %}
+                        {% else %}
+                            <div class="alert alert-warning alert-dismissible fade show">
+                                <i class="bi bi-shield-lock"></i>
+                                Vui lòng <a href="{% url 'login' %}" class="alert-link">đăng nhập</a> để bình luận.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endif %}
                     </div>
 
-                    <!-- Form bình luận -->
-                    {% if user.is_authenticated %}
-                        <div class="card border-0 shadow-sm p-3">
-                            <form method="post" id="comment-form">
-                                {% csrf_token %}
-                                <input type="hidden" name="parent_id" id="parent_id" value="">
-                                {% if form.errors %}
-                                    <div class="alert alert-danger">
-                                        <strong>Lỗi:</strong>
-                                        <ul class="mb-0">
-                                            {% for field in form %}
-                                                {% for error in field.errors %}
-                                                    <li>{{ error }}</li>
-                                                {% endfor %}
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% endif %}
-                                <div class="mb-3">
-                                    {{ form.noi_dung.label_tag }} {{ form.noi_dung }}
-                                </div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send"></i> Gửi bình luận
-                                </button>
-                            </form>
-                        </div>
-                    {% else %}
-                        <p>🔒 Vui lòng <a href="{% url 'login' %}">đăng nhập</a> để bình luận.</p>
-                    {% endif %}
-
-                    <!-- Các nút chức năng -->
-                    <div class="d-flex flex-wrap gap-2 mt-4">
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
                         {% if request.user.is_authenticated %}
                             {% if request.user.username == bai_viet.tac_gia or la_admin %}
-                                <a href="{% url 'bai_viet:sua_bai_viet' pk=bai_viet.pk %}" class="btn btn-warning btn-sm d-flex align-items-center gap-1 shadow-sm" title="Sửa bài viết">
-                                    <i class="bi bi-pencil-square"></i> Sửa
+                                <a href="{% url 'bai_viet:sua_bai_viet' pk=bai_viet.pk %}" class="btn btn-warning btn-action shadow-sm">
+                                    <i class="bi bi-pencil-square"></i> Sửa bài viết
                                 </a>
-                                <a href="{% url 'bai_viet:xoa_bai_viet' pk=bai_viet.pk %}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm" title="Xóa bài viết">
-                                    <i class="bi bi-trash"></i> Xóa
+                                <a href="{% url 'bai_viet:xoa_bai_viet' pk=bai_viet.pk %}" class="btn btn-outline-danger btn-action shadow-sm" onclick="return confirm('Bạn chắc chắn muốn xóa bài viết này?')">
+                                    <i class="bi bi-trash"></i> Xóa bài viết
                                 </a>
                             {% endif %}
 
-                            
-
                             {% if request.user.username != bai_viet.tac_gia and not la_admin %}
-                                <a href="{% url 'bai_viet:to_cao_bai_viet' bai_viet.pk %}" class="btn btn-warning btn-sm d-flex align-items-center gap-1 shadow-sm">
-                                    🚨 Tố cáo bài viết
+                                <a href="{% url 'bai_viet:to_cao_bai_viet' bai_viet.pk %}" class="btn btn-outline-warning btn-action shadow-sm">
+                                    <i class="bi bi-exclamation-triangle"></i> Tố cáo bài viết
                                 </a>
                             {% endif %}
                         {% endif %}
 
-
-                        <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm" title="Xem danh sách bài viết">
-                            <i class="bi bi-list-ul"></i> Danh sách
+                        <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-outline-secondary btn-action shadow-sm">
+                            <i class="bi bi-list-ul"></i> Danh sách bài viết
                         </a>
-                        <a href="{% url 'bai_viet:home' %}" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm" title="Trang chủ">
+                        <a href="{% url 'bai_viet:home' %}" class="btn btn-outline-secondary btn-action shadow-sm">
                             <i class="bi bi-house-door"></i> Trang chủ
                         </a>
                     </div>
                 </div>
-            </div>
+            </article>
         </div>
     </div>
 </div>
@@ -139,11 +339,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const commentId = this.getAttribute('data-id');
             document.getElementById('parent_id').value = commentId;
             const form = document.getElementById('comment-form');
-            form.scrollIntoView({ behavior: 'smooth' });
-            setTimeout(() => {
-                const textarea = form.querySelector('textarea');
-                if (textarea) textarea.focus();
-            }, 600);
+            if(form) {
+                form.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => {
+                    const textarea = form.querySelector('textarea');
+                    if (textarea) textarea.focus();
+                }, 600);
+            }
         });
     });
 });

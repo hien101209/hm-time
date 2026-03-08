@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}2048 Game{% endblock %}
+{% block content %}
+
+<style>
+.game2048-container {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 2rem;
+}
+
+.game2048-header {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 1.5rem 1.5rem 0 0;
+    text-align: center;
+}
+
+.game2048-header h2 {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.game2048-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: 0 0 1.5rem 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat {
+    text-align: center;
+    color: white;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffb366;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.game2048-board {
+    background: #bbada0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+.game2048-cell {
+    background: #cdc1b4;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 2.5rem;
+    min-height: 100px;
+    color: #776e65;
+}
+
+.cell-2 { background: #eee4da; color: #776e65; }
+.cell-4 { background: #ede0c8; color: #776e65; }
+.cell-8 { background: #f2b179; color: #f9f6f2; }
+.cell-16 { background: #f59563; color: #f9f6f2; }
+.cell-32 { background: #f67c5f; color: #f9f6f2; }
+.cell-64 { background: #f65e3b; color: #f9f6f2; }
+.cell-128 { background: #edcf72; color: #095f6b; font-size: 2rem; }
+.cell-256 { background: #edcc61; color: #095f6b; font-size: 2rem; }
+.cell-512 { background: #edc850; color: #095f6b; font-size: 2rem; }
+.cell-1024 { background: #edc53f; color: #095f6b; font-size: 1.8rem; }
+.cell-2048 { background: #edc22e; color: #095f6b; font-size: 1.8rem; }
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-2048 {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-2048:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
+}
+
+.instructions {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.instructions h4 {
+    color: #ff9800;
+    margin-bottom: 1rem;
+}
+
+.instructions ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.instructions li {
+    margin-bottom: 0.5rem;
+}
+
+.leaderboard {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    margin-top: 2rem;
+}
+
+.leaderboard h4 {
+    color: #ff9800;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard th, 
+.leaderboard td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard th {
+    color: #ff9800;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .game2048-board {
+        gap: 0.5rem;
+    }
+    
+    .game2048-cell {
+        min-height: 80px;
+        font-size: 1.8rem;
+    }
+}
+</style>
+
+<div class="game2048-container">
+    <div class="game2048-header">
+        <h2>🎲 2048</h2>
+        <p style="margin: 0; opacity: 0.9;">Ghép các số để tạo thành 2048</p>
+    </div>
+    
+    <div class="game2048-stats">
+        <div class="stat">
+            <div class="stat-label">Điểm</div>
+            <div class="stat-value" id="score2048">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Di chuyển</div>
+            <div class="stat-value" id="moves2048">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Trạng thái</div>
+            <div style="font-size: 1rem;" id="status2048">Sẵn sàng</div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h4>Hướng dẫn chơi:</h4>
+        <ul>
+            <li>Nhấn các phím <strong>Mũi tên</strong> để di chuyển các ô</li>
+            <li>Các ô có cùng số sẽ ghép lại thành số gấp đôi</li>
+            <li>Mục tiêu là tạo ra ô 2048</li>
+            <li>Game kết thúc khi không còn nước đi</li>
+        </ul>
+    </div>
+    
+    <div class="game2048-board" id="board2048"></div>
+    
+    <div class="controls">
+        <button class="btn-2048" onclick="start2048()">🎮 Bắt đầu</button>
+        <button class="btn-2048" onclick="reset2048()">🔄 Làm lại</button>
+    </div>
+</div>
+
+{% if top_scores %}
+<div class="container" style="margin-top: 3rem;">
+    <div class="leaderboard">
+        <h4>🏆 Top 10 Điểm cao nhất</h4>
+        <table>
+            <tr>
+                <th>Xếp hạng</th>
+                <th>Người chơi</th>
+                <th>Điểm</th>
+                <th>Ngày</th>
+            </tr>
+            {% for score in top_scores %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ score.user.username }}</td>
+                <td><strong>{{ score.score }}</strong></td>
+                <td>{{ score.created_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+let grid = [];
+let score = 0;
+let moves = 0;
+let gameStarted = false;
+
+function initGrid() {
+    grid = Array(16).fill(0);
+    addNewTile();
+    addNewTile();
+    render();
+}
+
+function addNewTile() {
+    let emptyIndexes = grid.map((val, idx) => val === 0 ? idx : null).filter(val => val !== null);
+    if (emptyIndexes.length === 0) return;
+    let randomIndex = emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)];
+    grid[randomIndex] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function render() {
+    const board = document.getElementById('board2048');
+    board.innerHTML = '';
+    
+    grid.forEach((value, index) => {
+        const cell = document.createElement('div');
+        cell.className = 'game2048-cell' + (value ? ' cell-' + value : '');
+        cell.textContent = value || '';
+        board.appendChild(cell);
+    });
+}
+
+function move(direction) {
+    if (!gameStarted) return;
+    
+    let moved = false;
+    let newGrid = [...grid];
+    
+    if (direction === 'left') {
+        newGrid = moveLeft(newGrid);
+    } else if (direction === 'right') {
+        newGrid = moveRight(newGrid);
+    } else if (direction === 'up') {
+        newGrid = moveUp(newGrid);
+    } else if (direction === 'down') {
+        newGrid = moveDown(newGrid);
+    }
+    
+    if (JSON.stringify(newGrid) !== JSON.stringify(grid)) {
+        grid = newGrid;
+        addNewTile();
+        moves++;
+        document.getElementById('moves2048').textContent = moves;
+        moved = true;
+    }
+    
+    render();
+    
+    if (isGameOver()) {
+        endGame2048();
+    }
+}
+
+function moveLeft(grid) {
+    grid = compressLine(grid, false);
+    grid = mergeLine(grid, false);
+    grid = compressLine(grid, false);
+    return grid;
+}
+
+function moveRight(grid) {
+    grid = grid.map((_, i) => grid[Math.floor(i / 4) * 4 + (3 - (i % 4))]);
+    grid = compressLine(grid, false);
+    grid = mergeLine(grid, false);
+    grid = compressLine(grid, false);
+    grid = grid.map((_, i) => grid[Math.floor(i / 4) * 4 + (3 - (i % 4))]);
+    return grid;
+}
+
+function moveUp(grid) {
+    grid = transposeGrid(grid);
+    grid = compressLine(grid, false);
+    grid = mergeLine(grid, false);
+    grid = compressLine(grid, false);
+    grid = transposeGrid(grid);
+    return grid;
+}
+
+function moveDown(grid) {
+    grid = transposeGrid(grid);
+    grid = grid.map((_, i) => grid[Math.floor(i / 4) * 4 + (3 - (i % 4))]);
+    grid = compressLine(grid, false);
+    grid = mergeLine(grid, false);
+    grid = compressLine(grid, false);
+    grid = grid.map((_, i) => grid[Math.floor(i / 4) * 4 + (3 - (i % 4))]);
+    grid = transposeGrid(grid);
+    return grid;
+}
+
+function compressLine(grid, isColumn = false) {
+    return grid;
+}
+
+function mergeLine(grid, isColumn = false) {
+    return grid;
+}
+
+function transposeGrid(grid) {
+    let newGrid = Array(16).fill(0);
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            newGrid[j * 4 + i] = grid[i * 4 + j];
+        }
+    }
+    return newGrid;
+}
+
+function isGameOver() {
+    return !grid.some(val => val === 0);
+}
+
+function start2048() {
+    if (!gameStarted) {
+        gameStarted = true;
+        document.getElementById('status2048').textContent = 'Đang chơi';
+        initGrid();
+    }
+}
+
+function reset2048() {
+    gameStarted = false;
+    score = 0;
+    moves = 0;
+    grid = Array(16).fill(0);
+    document.getElementById('score2048').textContent = '0';
+    document.getElementById('moves2048').textContent = '0';
+    document.getElementById('status2048').textContent = 'Sẵn sàng';
+    render();
+}
+
+function endGame2048() {
+    gameStarted = false;
+    document.getElementById('status2048').textContent = 'Đã kết thúc';
+    
+    fetch('{% url "game:save_2048" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'score=' + score + '&moves=' + moves,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}
+    });
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') move('left');
+    else if (e.key === 'ArrowRight') move('right');
+    else if (e.key === 'ArrowUp') move('up');
+    else if (e.key === 'ArrowDown') move('down');
+});
+
+render();
+</script>
+
+{% endblock %}

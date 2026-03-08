@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Memory Game{% endblock %}
+{% block content %}
+
+<style>
+.memory-container {
+    max-width: 700px;
+    margin: 3rem auto;
+    padding: 2rem;
+}
+
+.memory-header {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 1.5rem 1.5rem 0 0;
+    text-align: center;
+}
+
+.memory-header h2 {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.memory-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: 0 0 1.5rem 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat {
+    text-align: center;
+    color: white;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffb366;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.memory-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1.5rem;
+}
+
+.memory-card {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    font-size: 2rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+}
+
+.memory-card:hover:not(.matched) {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
+}
+
+.memory-card.flipped {
+    background: rgba(255, 152, 0, 0.2);
+    border: 2px solid #ff9800;
+}
+
+.memory-card.matched {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-memory {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-memory:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
+}
+
+.message {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.message.success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 2px solid #4caf50;
+}
+
+.leaderboard {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    margin-top: 2rem;
+}
+
+.leaderboard h4 {
+    color: #ff9800;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard th, 
+.leaderboard td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard th {
+    color: #ff9800;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .memory-board {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .memory-card {
+        font-size: 1.5rem;
+    }
+    
+    .memory-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<div class="memory-container">
+    <div class="memory-header">
+        <h2>🧠 Memory Game</h2>
+        <p style="margin: 0; opacity: 0.9;">Tìm các cặp thẻ giống nhau</p>
+    </div>
+    
+    <div class="memory-stats">
+        <div class="stat">
+            <div class="stat-label">Cặp tìm thấy</div>
+            <div class="stat-value" id="matched">0/8</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Lần thử</div>
+            <div class="stat-value" id="attempts">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Điểm</div>
+            <div class="stat-value" id="score">100</div>
+        </div>
+    </div>
+    
+    <div id="message"></div>
+    
+    <div class="memory-board" id="gameBoard"></div>
+    
+    <div class="controls">
+        <button class="btn-memory" onclick="startGame()">🎮 Bắt đầu</button>
+        <button class="btn-memory" onclick="resetGame()">🔄 Làm lại</button>
+    </div>
+</div>
+
+{% if top_scores %}
+<div class="container" style="margin-top: 3rem;">
+    <div class="leaderboard">
+        <h4>🏆 Top 10 Điểm cao nhất</h4>
+        <table>
+            <tr>
+                <th>Xếp hạng</th>
+                <th>Người chơi</th>
+                <th>Điểm</th>
+                <th>Ngày</th>
+            </tr>
+            {% for score in top_scores %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ score.user.username }}</td>
+                <td><strong>{{ score.score }}</strong></td>
+                <td>{{ score.created_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+const pairs = ['🍎', '🍌', '🍊', '🍓', '🍒', '🍑', '🥝', '🍍', '🍎', '🍌', '🍊', '🍓', '🍒', '🍑', '🥝', '🍍'];
+let cards = [];
+let firstCard = null;
+let secondCard = null;
+let lockBoard = false;
+let matchedPairs = 0;
+let attempts = 0;
+let initialScore = 100;
+let score = 100;
+let gameStarted = false;
+
+function initGame() {
+    cards = [...pairs].sort(() => Math.random() - 0.5);
+    const board = document.getElementById('gameBoard');
+    board.innerHTML = '';
+    
+    cards.forEach((symbol, index) => {
+        const card = document.createElement('button');
+        card.className = 'memory-card';
+        card.dataset.symbol = symbol;
+        card.dataset.index = index;
+        card.textContent = '?';
+        card.onclick = () => flipCard(card);
+        board.appendChild(card);
+    });
+}
+
+function flipCard(card) {
+    if (!gameStarted || lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+    
+    card.textContent = card.dataset.symbol;
+    card.classList.add('flipped');
+    
+    if (!firstCard) {
+        firstCard = card;
+    } else {
+        secondCard = card;
+        lockBoard = true;
+        attempts++;
+        document.getElementById('attempts').textContent = attempts;
+        checkMatch();
+    }
+}
+
+function checkMatch() {
+    if (firstCard.dataset.symbol === secondCard.dataset.symbol) {
+        disableCards();
+        matchedPairs++;
+        document.getElementById('matched').textContent = matchedPairs + '/8';
+        
+        if (matchedPairs === 8) {
+            gameWon();
+        }
+    } else {
+        unflipCards();
+    }
+}
+
+function disableCards() {
+    firstCard.classList.add('matched');
+    secondCard.classList.add('matched');
+    resetCards();
+}
+
+function unflipCards() {
+    setTimeout(() => {
+        firstCard.textContent = '?';
+        secondCard.textContent = '?';
+        firstCard.classList.remove('flipped');
+        secondCard.classList.remove('flipped');
+        resetCards();
+    }, 800);
+}
+
+function resetCards() {
+    [firstCard, secondCard] = [null, null];
+    lockBoard = false;
+}
+
+function startGame() {
+    if (!gameStarted) {
+        gameStarted = true;
+        initGame();
+    }
+}
+
+function resetGame() {
+    gameStarted = false;
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
+    matchedPairs = 0;
+    attempts = 0;
+    score = initialScore;
+    document.getElementById('matched').textContent = '0/8';
+    document.getElementById('attempts').textContent = '0';
+    document.getElementById('score').textContent = initialScore;
+    document.getElementById('message').innerHTML = '';
+    initGame();
+}
+
+function gameWon() {
+    gameStarted = false;
+    score = Math.max(0, initialScore - (attempts - 8) * 5);
+    document.getElementById('score').textContent = score;
+    
+    const msg = document.getElementById('message');
+    msg.innerHTML = '<div class="message success">🎉 Chúc mừng! Bạn thắng với ' + attempts + ' lần thử. Điểm: ' + score + '</div>';
+    
+    fetch('{% url "game:save_memory" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'score=' + score + '&time=0',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}
+    });
+}
+
+initGame();
+</script>
+
+{% endblock %}

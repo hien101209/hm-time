@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'admin.urls'
@@ -186,3 +186,6 @@ CACHES = {
     }
 }
 
+print("DB USER:", url.username)
+print("DB HOST:", url.hostname)
+print("DB PORT:", url.port)

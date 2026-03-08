@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Snake Game{% endblock %}
+{% block content %}
+
+<style>
+.snake-container {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 30px rgba(255, 152, 0, 0.2);
+    text-align: center;
+}
+
+.snake-container h2 {
+    color: white;
+    margin-bottom: 2rem;
+    font-weight: 700;
+}
+
+#gameCanvas {
+    border: 3px solid white;
+    background: #1a1a2e;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 0.5rem;
+}
+
+.snake-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.snake-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.snake-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.snake-stats {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    color: white;
+    margin-top: 1.5rem;
+}
+
+.stat-item {
+    display: inline-block;
+    margin: 0.5rem 1rem;
+    font-size: 1.1rem;
+}
+
+.stat-label {
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+#score {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.instructions {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-top: 1.5rem;
+    text-align: left;
+}
+
+.instructions h4 {
+    margin-bottom: 1rem;
+    color: #ffb366;
+}
+
+.instructions ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.instructions li {
+    margin-bottom: 0.5rem;
+}
+
+.leaderboard {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    margin-top: 2rem;
+}
+
+.leaderboard h4 {
+    color: #ff9800;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard th, 
+.leaderboard td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard th {
+    color: #ff9800;
+    font-weight: 700;
+}
+
+.leaderboard tr:hover {
+    background: var(--bg-secondary);
+}
+</style>
+
+<div class="snake-container">
+    <h2>🐍 Snake Game</h2>
+    <div id="score">Score: 0</div>
+    
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    
+    <div class="snake-controls">
+        <button class="snake-btn" onclick="startGame()">🎮 Bắt đầu</button>
+        <button class="snake-btn" onclick="pauseGame()">⏸️ Tạm dừng</button>
+        <button class="snake-btn" onclick="resetGame()">🔄 Làm lại</button>
+    </div>
+    
+    <div class="instructions">
+        <h4>Hướng dẫn chơi:</h4>
+        <ul>
+            <li>Nhấn các phím <strong>Mũi tên</strong> để di chuyển rắn</li>
+            <li>Ăn các hạt thức ăn để tăng điểm</li>
+            <li>Tránh va chạm với tường và cơ thể của rắn</li>
+            <li>Mỗi hạt ăn được = 10 điểm</li>
+        </ul>
+    </div>
+    
+    <div class="snake-stats">
+        <div class="stat-item">
+            <span class="stat-label">Trạng thái:</span>
+            <span id="status">Chưa bắt đầu</span>
+        </div>
+    </div>
+</div>
+
+{% if top_scores %}
+<div class="container" style="margin-top: 3rem;">
+    <div class="leaderboard">
+        <h4>🏆 Top 10 Điểm cao nhất</h4>
+        <table>
+            <tr>
+                <th>Xếp hạng</th>
+                <th>Người chơi</th>
+                <th>Điểm</th>
+                <th>Ngày</th>
+            </tr>
+            {% for score in top_scores %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ score.user.username }}</td>
+                <td><strong>{{ score.score }}</strong></td>
+                <td>{{ score.created_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+let canvas = document.getElementById("gameCanvas");
+let ctx = canvas.getContext("2d");
+let gameRunning = false;
+let gamePaused = false;
+
+let snake = [{ x: 200, y: 200 }];
+let food = { x: Math.random() * 380 + 10, y: Math.random() * 380 + 10 };
+let dx = 10;
+let dy = 0;
+let score = 0;
+let gameSpeed = 100;
+
+let keys = {};
+
+window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    
+    if (key === 'arrowup' && dy === 0) { dx = 0; dy = -10; }
+    else if (key === 'arrowdown' && dy === 0) { dx = 0; dy = 10; }
+    else if (key === 'arrowleft' && dx === 0) { dx = -10; dy = 0; }
+    else if (key === 'arrowright' && dx === 0) { dx = 10; dy = 0; }
+});
+
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        gamePaused = false;
+        document.getElementById('status').textContent = 'Đang chơi';
+        gameLoop();
+    }
+}
+
+function pauseGame() {
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+        document.getElementById('status').textContent = 'Tạm dừng';
+    } else {
+        document.getElementById('status').textContent = 'Đang chơi';
+        gameLoop();
+    }
+}
+
+function resetGame() {
+    snake = [{ x: 200, y: 200 }];
+    food = { x: Math.random() * 380 + 10, y: Math.random() * 380 + 10 };
+    dx = 10;
+    dy = 0;
+    score = 0;
+    gameRunning = false;
+    gamePaused = false;
+    document.getElementById('score').textContent = 'Score: 0';
+    document.getElementById('status').textContent = 'Chưa bắt đầu';
+    draw();
+}
+
+function gameLoop() {
+    if (!gameRunning || gamePaused) return;
+    
+    setTimeout(() => {
+        update();
+        draw();
+        gameLoop();
+    }, gameSpeed);
+}
+
+function update() {
+    let head = { x: snake[0].x + dx, y: snake[0].y + dy };
+    
+    if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400) {
+        endGame();
+        return;
+    }
+    
+    for (let segment of snake) {
+        if (head.x === segment.x && head.y === segment.y) {
+            endGame();
+            return;
+        }
+    }
+    
+    snake.unshift(head);
+    
+    if (head.x === Math.round(food.x / 10) * 10 && head.y === Math.round(food.y / 10) * 10) {
+        score += 10;
+        document.getElementById('score').textContent = 'Score: ' + score;
+        food = { x: Math.floor(Math.random() * 40) * 10, y: Math.floor(Math.random() * 40) * 10 };
+    } else {
+        snake.pop();
+    }
+}
+
+function draw() {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 400, 400);
+    
+    ctx.fillStyle = '#ff9800';
+    for (let segment of snake) {
+        ctx.fillRect(segment.x, segment.y, 10, 10);
+        ctx.strokeStyle = '#ffb366';
+        ctx.strokeRect(segment.x, segment.y, 10, 10);
+    }
+    
+    ctx.fillStyle = '#ffb366';
+    ctx.fillRect(food.x, food.y, 10, 10);
+}
+
+function endGame() {
+    gameRunning = false;
+    document.getElementById('status').textContent = 'Đã kết thúc';
+    
+    fetch('{% url "game:save_snake" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new FormData(new URLSearchParams({score: score}))
+    });
+    
+    if (confirm('Game Over! Điểm của bạn: ' + score + '\nChơi lại?')) {
+        resetGame();
+    }
+}
+
+draw();
+</script>
+
+{% endblock %}

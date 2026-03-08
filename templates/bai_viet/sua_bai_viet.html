@@ -1,40 +1,369 @@
 {% extends "base.html" %}
 
-{% block title %}🛠️ Sửa bài viết{% endblock %}
+{% block title %}🛠️ Chỉnh sửa bài viết{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <h1 class="mb-4 text-primary text-center">
-        <i class="bi bi-pencil-square"></i> Chỉnh sửa bài viết
+<style>
+  .form-header {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb366 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0.75rem;
+  }
+
+  [data-bs-theme="dark"] .form-header {
+    background: linear-gradient(135deg, #e68900 0%, #ff9800 100%);
+  }
+
+  .form-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.875rem;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+    color: inherit;
+  }
+
+  .form-label {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: inherit;
+  }
+
+  .form-control, 
+  .form-select, 
+  textarea {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+
+  .form-control:focus, 
+  .form-select:focus,
+  textarea:focus {
+    background-color: var(--bg-card);
+    border-color: #ff9800;
+    color: inherit;
+    box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.25);
+  }
+
+  .file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .file-input-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 179, 102, 0.1) 100%);
+    border: 2px dashed #ff9800;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .file-input-label:hover {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 179, 102, 0.2) 100%);
+    border-color: #ffb366;
+  }
+
+  [data-bs-theme="dark"] .file-input-label {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(255, 179, 102, 0.05) 100%);
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .file-list {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .btn.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+  }
+
+  .btn.btn-success:hover {
+    background: linear-gradient(135deg, #157347 0%, #146c43 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+  }
+
+  .help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+  }
+
+  [data-bs-theme="dark"] .help-text {
+    color: #adb5bd;
+  }
+
+  .error-container {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c2c7 100%);
+    border: 1px solid #f1b0b7;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  [data-bs-theme="dark"] .error-container {
+    background: linear-gradient(135deg, #842029 0%, #711a26 100%);
+    border-color: #9d3d47;
+  }
+
+  .success-link {
+    color: white;
+    text-decoration: underline;
+  }
+
+  .success-link:hover {
+    color: #fff;
+    opacity: 0.8;
+  }
+
+  @media (max-width: 768px) {
+    .form-container {
+      padding: 1.5rem;
+    }
+
+    .form-header {
+      padding: 1.5rem 0;
+    }
+
+    .button-group {
+      flex-direction: column;
+    }
+
+    .button-group .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="form-header">
+  <div class="container">
+    <h1 class="mb-0 fw-bold">
+      <i class="bi bi-pencil-square"></i> Chỉnh sửa bài viết
     </h1>
-
-    {% if error_message %}
-        <div class="alert alert-danger text-center shadow-sm" role="alert" style="font-size: 1.2rem;">
-            <i class="bi bi-exclamation-triangle-fill"></i> {{ error_message }}
-        </div>
-        <div class="text-center mt-4">
-            <a href="{% url 'bai_viet:home' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left-circle"></i> Quay lại trang chủ
-            </a>
-        </div>
-
-    {% elif form %}
-        <div class="card shadow-lg mx-auto" style="max-width: 700px;">
-            <div class="card-body">
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-flex justify-content-between mt-4">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-save-fill"></i> Cập nhật
-                        </button>
-                        <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle"></i> Hủy
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-    {% endif %}
+  </div>
 </div>
+
+<div class="container py-4">
+  {% if error_message %}
+    <div class="error-container text-danger">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <h5 class="mb-0">Lỗi</h5>
+      </div>
+      <p class="mb-3">{{ error_message }}</p>
+      <a href="{% url 'bai_viet:home' %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-arrow-left-circle"></i> Quay lại trang chủ
+      </a>
+    </div>
+
+  {% elif form %}
+    <div class="form-container">
+      <form method="post" enctype="multipart/form-data" novalidate id="edit-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle"></i> <strong>Lỗi:</strong>
+            {{ form.non_field_errors }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+
+        <!-- Main Content Section -->
+        <div class="row">
+          <div class="col-lg-8">
+            <h4 class="form-section-title">
+              <i class="bi bi-file-text"></i> Nội dung bài viết
+            </h4>
+
+            <!-- Title -->
+            <div class="mb-4">
+              <label for="id_tieu_de" class="form-label">
+                <i class="bi bi-pencil"></i> Tiêu đề *
+              </label>
+              {{ form.tieu_de }}
+              {% if form.tieu_de.errors %}
+                <div class="text-danger small mt-1">{{ form.tieu_de.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Slug -->
+            <div class="mb-4">
+              <label for="id_slug" class="form-label">
+                <i class="bi bi-link-45deg"></i> Slug (URL-friendly)
+              </label>
+              {{ form.slug }}
+              {% if form.slug.errors %}
+                <div class="text-danger small mt-1">{{ form.slug.errors.0 }}</div>
+              {% endif %}
+              <div class="help-text">URL thân thiện cho SEO</div>
+            </div>
+
+            <!-- Content -->
+            <div class="mb-4">
+              <label for="id_noi_dung" class="form-label">
+                <i class="bi bi-file-earmark-text"></i> Nội dung *
+              </label>
+              {{ form.noi_dung }}
+              {% if form.noi_dung.errors %}
+                <div class="text-danger small mt-1">{{ form.noi_dung.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Category -->
+            <div class="mb-4">
+              <label for="id_danh_muc" class="form-label">
+                <i class="bi bi-folder"></i> Danh mục
+              </label>
+              {{ form.danh_muc }}
+              {% if form.danh_muc.errors %}
+                <div class="text-danger small mt-1">{{ form.danh_muc.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="col-lg-4">
+            <h4 class="form-section-title">
+              <i class="bi bi-image"></i> Hình ảnh & Cài đặt
+            </h4>
+
+            <!-- Featured Image -->
+            <div class="mb-4">
+              <label for="id_hinh_anh" class="form-label">
+                <i class="bi bi-image"></i> Hình ảnh minh họa
+              </label>
+              <div class="file-input-wrapper">
+                <label for="id_hinh_anh" class="file-input-label">
+                  <div class="text-center">
+                    <i class="bi bi-cloud-upload fs-4"></i>
+                    <div>Kéo thả hoặc nhấp để thay đổi</div>
+                    <small class="text-muted d-block">JPG, PNG, GIF (tối đa 5MB)</small>
+                  </div>
+                </label>
+                {{ form.hinh_anh }}
+              </div>
+              {% if form.hinh_anh.errors %}
+                <div class="text-danger small mt-1">{{ form.hinh_anh.errors.0 }}</div>
+              {% endif %}
+              {% if form.instance.hinh_anh %}
+                <div class="file-list">
+                  <small class="d-block text-success mb-2">
+                    <i class="bi bi-check-circle"></i> Hình ảnh hiện tại:
+                  </small>
+                  <img src="{{ form.instance.hinh_anh.url }}" alt="Hình ảnh hiện tại" class="img-fluid rounded mb-2" style="max-height: 150px;">
+                  <div style="word-break: break-all; font-size: 0.85rem;">{{ form.instance.hinh_anh.name }}</div>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Additional Options -->
+            {% if form.noi_bat %}
+            <div class="mb-4">
+              <div class="form-check form-switch">
+                {{ form.noi_bat }}
+                <label class="form-check-label" for="id_noi_bat">
+                  <i class="bi bi-star-fill"></i> Đánh dấu là bài viết nổi bật
+                </label>
+              </div>
+              <div class="help-text">Bài viết nổi bật sẽ được hiển thị ở vị trí ưu tiên</div>
+            </div>
+            {% endif %}
+
+            <hr class="my-4">
+
+            <!-- Submit Buttons -->
+            <div class="button-group">
+              <button type="submit" class="btn btn-success btn-lg flex-grow-1">
+                <i class="bi bi-save-fill"></i> Cập nhật bài viết
+              </button>
+              <a href="{% url 'bai_viet:danh_sach_bai_viet' %}" class="btn btn-outline-secondary btn-lg flex-grow-1">
+                <i class="bi bi-x-circle"></i> Hủy
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // File input drag and drop
+  const fileInput = document.getElementById('id_hinh_anh');
+  const fileLabel = document.querySelector('.file-input-label');
+
+  if(fileInput && fileLabel) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      fileLabel.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      fileLabel.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      fileLabel.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+      fileLabel.style.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+      fileLabel.style.borderColor = '#ffb366';
+    }
+
+    function unhighlight(e) {
+      fileLabel.style.backgroundColor = '';
+      fileLabel.style.borderColor = '';
+    }
+
+    fileLabel.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+    }
+  }
+});
+</script>
 {% endblock %}
